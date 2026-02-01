@@ -17,14 +17,14 @@ func main() {
 		return c.SendString("Hello, World!")
 	})
 
-	req := httptest.NewRequest("GET", "http://google.com", nil)
+	req := httptest.NewRequest("GET", "https://google.com", nil)
 	req.Header.Set("Referer", "good afternoon")
 
 	resp, _ := app.Test(req)
 
 	if resp.StatusCode == fiber.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		fmt.Println(string(body))
+		fmt.Println(string(body), 12)
 	}
 
 	log.Fatal(app.Listen(":3000"))
