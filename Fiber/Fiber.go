@@ -8,16 +8,21 @@ import (
 
 func main() {
 	app := fiber.New()
-	app.Get("/", func(c *fiber.Ctx) error {
+	app.Get("/user/:name", func(c *fiber.Ctx) error {
+		c.AllParams()
 		c.Accepts("application/json")
-		c.Accepts("text/html")
-		c.Accepts("json", "text")
-		c.Accepts("application/json")
-		c.Accepts("text/plain", "application/json")
-		c.Accepts("image/png")
-		c.Accepts("png")
-		return c.SendString("Hello, World!")
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"user": c.Params("name")})
+
 	})
-	log.Fatal(app.Listen(":3000"))
+
+	app.Get("/user/*", func(c *fiber.Ctx) error {
+		c.AllParams()
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"user": c.Params("*")})
+	})
+
+	app.Get("/stack", func(c *fiber.Ctx) error {
+		return c.JSON(c.App().Stack())
+	})
+	log.Fatal(app.Listen(":3003"))
 
 }
