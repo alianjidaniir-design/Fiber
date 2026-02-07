@@ -2,36 +2,42 @@ package main
 
 import (
 	"context"
-	"math/big"
 	"time"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
-type students struct {
+type EnrollmentStatus string
+
+const (
+	StatusEnrolled EnrollmentStatus = "enrolled"
+	StatusCanceled EnrollmentStatus = "canceled"
+)
+
+type Students struct {
 	gorm.Model
-	studentCode string `gorm:"default"`
-	firstName   string
-	lastName    string
+	StudentCode string `gorm:"size:32;unique;not null"`
+	FirstName   string `gorm:"size:64;not null"`
+	LastName    string `gorm:"size:64;not null"`
 }
 
-type courses struct {
+type Courses struct {
 	gorm.Model
-	courseCode    string
-	title         string
-	capacity      int
-	enrolledCount int
-	isActive      bool
+	CourseCode    string `gorm:"size:32;unique;not null"`
+	Title         string `gorm:"size:128;not null"`
+	Capacity      int    `gorm:"not null"`
+	EnrolledCount int    `gorm:"default:0;not null"`
+	IsActive      bool   `gorm:"default:true;not null"`
 }
 
-type enrollments struct {
+type Enrollments struct {
 	gorm.Model
-	studentId  big.Int
-	courseId   big.Int
-	status     string
-	canceled   time.Time
-	enrolledAt time.Time
+	Status     EnrollmentStatus `gorm:"size : 10;default:'enrolled';not null"`
+	CanceledAt *time.Time       `gorm:"not null"`
+	EnrolledAt *time.Time       `gorm:"not null"`
+	StudentId  int              `gorm:"not null"`
+	CourseId   int              `gorm:"not null"`
 }
 
 func main() {
@@ -43,11 +49,12 @@ func main() {
 
 	ctx := context.Background()
 
-	err = db.AutoMigrate(&students{}, &courses{}, &enrollments{})
+	err = db.AutoMigrate(&Students{}, &Courses{}, &Enrollments{})
 	if err != nil {
 		panic("failed to connect database")
 	}
 
-	err = gorm.G[students](db).Create(ctx, &students{studentCode: "404151521", firstName: "Ali", lastName: "Anjidani"})
+	err = gorm.G[Students](db).Create(ctx, &Students{StudentCode: "404161429", FirstName: "Mahdi", LastName: "Miladi"})
+	err = gorm.G[Courses](db).Create(ctx, &Courses{CourseCode: "169", Title: "Arabic", Capacity: 123, EnrolledCount: 1, IsActive: true})
 
 }
