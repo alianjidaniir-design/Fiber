@@ -1,21 +1,14 @@
 package main
 
 import (
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
 func main() {
 	app := fiber.New()
-
-	app.Use(func(c *fiber.Ctx) error {
-		c.Bind(fiber.Map{
-			"Title": "Hello World",
-		})
-		return c.SendString("emam")
+	app.Listen("app.souk", fiber.ListenConfig{
+		ListenerNetwork:    fiber.NetworkUnix,
+		UnixSocketFileMode: 0777,
 	})
-	app.Get("/Tavan", func(c *fiber.Ctx) error {
-		return c.Render("xxx.tmpl", fiber.Map{})
-	})
-	app.Listen(":3002")
 
 }
