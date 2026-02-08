@@ -1,7 +1,6 @@
 package main
 
 import "github.com/gofiber/fiber/v3"
-import "github.com/gofiber/fiber/v3/extractors"
 
 type User struct {
 	ID   int    `params:"id"`
@@ -19,19 +18,12 @@ func main() {
 		return c.JSON(user)
 	})
 
-	apikeyExtractor := extractors.Chain(
-		extractors.FromHeader("X-Api-Key"),
-		extractors.FromQuery("api-key"),
-		extractors.FromCookie("api-key"),
-	)
-	app.Use(func(c fiber.Ctx) error {
-		apiKey, err := apikeyExtractor.Extract(c)
-		if err != nil {
-			return c.Status(401).SendString("API key required")
-		}
-		return c.Next()
+	app.Get("/car", func(c fiber.Ctx) error {
+		return c.Redirect().To("/err")
 	})
-
+	app.Get("/err", func(c fiber.Ctx) error {
+		return c.SendString("Hi fiber")
+	})
 	app.Listen(":3000")
 
 }
