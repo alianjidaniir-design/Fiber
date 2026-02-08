@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"time"
 
@@ -44,7 +43,7 @@ type Enrollments struct {
 	CourseId   int
 }
 
-func Createuser(c fiber.Ctx) error {
+func CreateUser(c fiber.Ctx) error {
 	user := new(Students)
 
 	if err := db.Create(user).Error; err != nil {
@@ -60,7 +59,7 @@ func Createuser(c fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"massage": user,
+		"massage": "User registered successfully",
 		"id":      user.ID,
 	})
 
@@ -74,16 +73,12 @@ func main() {
 		panic("failed to connect database")
 	}
 
-	ctx := context.Background()
-
 	err = db.AutoMigrate(&Students{}, &Courses{}, &Enrollments{})
 	if err != nil {
 		panic("failed to connect database")
 	}
 
-	err = gorm.G[Students](db).Create(ctx, &Students{StudentCode: "4141414141", FirstName: "Mahdi", LastName: "Miladi"})
-	err = gorm.G[Courses](db).Create(ctx, &Courses{CourseCode: "000", Title: "Arabic", Capacity: 123, EnrolledCount: 1, IsActive: true})
-	app.Post("/api/v1/students", Createuser)
+	app.Post("/api/v1/students", CreateUser)
 
 	log.Fatal(app.Listen(":3000"))
 }
