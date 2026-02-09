@@ -46,16 +46,16 @@ type Enrollments struct {
 func CreateUser(c fiber.Ctx) error {
 	user := new(Students)
 
+	if err := c.Bind().Body(&user); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
 	if err := db.Create(user).Error; err != nil {
 		// GORM error during creation (e.g., unique constraint violation)
 		log.Printf("GORM Error creating user: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Database insertion failed",
 		})
-	}
-
-	if err := c.Bind().Body(&user); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
@@ -77,8 +77,8 @@ func main() {
 	if err != nil {
 		panic("failed to connect database")
 	}
-
-	app.Post("/api/v1/students", CreateUser)
+	api := app.Group("/api")
+	api.Post("/v1/students", CreateUser)
 
 	log.Fatal(app.Listen(":3000"))
 }
