@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -44,24 +45,18 @@ type Enrollments struct {
 }
 
 func CreateUser(c fiber.Ctx) error {
-	user := new(Students)
+	students := new(Students)
 
-	if err := c.Bind().Body(&user); err != nil {
+	if err := c.Bind().JSON(students); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if err := db.Create(user).Error; err != nil {
-		// GORM error during creation (e.g., unique constraint violation)
-		log.Printf("GORM Error creating user: %v", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Database insertion failed",
-		})
+	if err := db.Create(students).Error; err != nil {
+		fmt.Println("err", err)
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"massage": "User registered successfully",
-		"id":      user.ID,
-	})
+	return c.Status(201).JSON(students)
 
 }
 
@@ -81,5 +76,5 @@ func main() {
 	api := app.Group("/api")
 	api.Post("/v1/students", CreateUser)
 
-	log.Fatal(app.Listen(":3006"))
+	log.Fatal(app.Listen(":3000"))
 }
