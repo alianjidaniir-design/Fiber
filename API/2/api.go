@@ -77,8 +77,9 @@ func main() {
 	if err != nil {
 		panic("failed to connect database")
 	}
+
 	api := app.Group("/api")
 	api.Post("/v1/students", CreateUser)
 
-	log.Fatal(app.Listen(":3000"))
+	log.Fatal(app.Listen(":3006"))
 }
