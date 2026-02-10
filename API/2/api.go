@@ -12,7 +12,7 @@ import (
 
 type EnrollmentStatus string
 
-var db *gorm.DB
+var db2 *gorm.DB
 
 const (
 	StatusEnrolled EnrollmentStatus = "enrolled"
@@ -51,13 +51,31 @@ func CreateUser(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if err := db.Create(students).Error; err != nil {
+	if err := db2.Create(students).Error; err != nil {
 		fmt.Println("err", err, 12*22)
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	return c.Status(201).JSON(students)
 
+}
+
+func listUsers(c fiber.Ctx) error {
+	var students []Students
+
+	if err := db2.Find(&students).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(students)
+}
+
+func GetUsers(c fiber.Ctx) error {
+	var students Students
+	if err := db2.Find(&students.ID).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(students.ID)
 }
 
 func main() {
@@ -68,6 +86,8 @@ func main() {
 		panic("failed to connect database")
 	}
 
+	db2 = db
+
 	err = db.AutoMigrate(&Students{}, &Courses{}, &Enrollments{})
 	if err != nil {
 		panic("failed to connect database")
@@ -75,6 +95,8 @@ func main() {
 
 	api := app.Group("/api")
 	api.Post("/v1/students", CreateUser)
+	api.Get("/v2/students", listUsers)
+	api.Get("/v1/students", GetUsers)
 
 	log.Fatal(app.Listen(":3000"))
 }
