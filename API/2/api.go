@@ -63,19 +63,50 @@ func CreateUser(c fiber.Ctx) error {
 func listUsers(c fiber.Ctx) error {
 	var students []Students
 
-	if err := db2.Find(&students).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	if err := db2.Find(&students, c.Params("id")).Error; err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-
-	return c.JSON(students)
+	return c.Status(200).JSON(students)
 }
 
 func GetUsers(c fiber.Ctx) error {
 	var students Students
-	if err := db2.Find(&students.ID).Error; err != nil {
+	if err := db2.Find(&students, c.Params("id")).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(students.ID)
+	return c.JSON(students)
+}
+
+func CreateCourse(c fiber.Ctx) error {
+	var course Courses
+	if err := c.Bind().JSON(&course); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if err := db2.Create(&course).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.Status(201).JSON(course)
+}
+
+func UpdateUser(c fiber.Ctx) error {
+	var students Students
+	if err := c.Bind().JSON(students); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	if err := db2.Update("id", students).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.Status(200).JSON(students)
+}
+
+func DeleteUser(c fiber.Ctx) error {
+	var students Students
+	if err := db2.Delete(&students, c.Params("id")).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.Status(200).JSON(students)
+
 }
 
 func main() {
@@ -96,7 +127,10 @@ func main() {
 	api := app.Group("/api")
 	api.Post("/v1/students", CreateUser)
 	api.Get("/v2/students", listUsers)
-	api.Get("/v1/students", GetUsers)
+	api.Get("/v1/students/:id", GetUsers)
+	api.Put("/v1/students/{studentsID}", UpdateUser)
+	api.Delete("/v1/students/:id", DeleteUser)
+	api.Post("/v1/courses", CreateCourse)
 
 	log.Fatal(app.Listen(":3000"))
 }
