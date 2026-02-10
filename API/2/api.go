@@ -52,7 +52,7 @@ func CreateUser(c fiber.Ctx) error {
 	}
 
 	if err := db.Create(students).Error; err != nil {
-		fmt.Println("err", err)
+		fmt.Println("err", err, 12*22)
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
