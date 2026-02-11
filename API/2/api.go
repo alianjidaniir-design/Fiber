@@ -149,12 +149,12 @@ func UpdateCourse(c fiber.Ctx) error {
 	return c.Status(200).JSON(students)
 }
 
-func DeactivateCourse(c fiber.Ctx) error {
+func deactive(c fiber.Ctx) error {
 	var courses Courses
-	if err := c.Bind().JSON(courses); err != nil {
+	if err := db2.Find(&courses, c.Params("id")).Error; err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	if err:=db2.
+	return c.Status(200).JSON(courses)
 }
 
 func main() {
@@ -183,6 +183,7 @@ func main() {
 	api.Get("/v1/courses/:id", Getcourses)
 	api.Delete("/v1/courses/:id", DeleteCourse)
 	api.Put("/v1/courses/:id", UpdateCourse)
+	api.Patch("/v1/courses/:id", deactive)
 
 	log.Fatal(app.Listen(":3000"))
 }
