@@ -32,7 +32,7 @@ type Courses struct {
 	Title         string `gorm:"size:128;not null"`
 	Capacity      int    `gorm:"not null"`
 	EnrolledCount int    `gorm:"default:0;not null"`
-	IsActive      bool   `gorm:"default:true;not null"`
+	IsActive      bool   `gorm:"not null;default:true"`
 }
 
 type Enrollments struct {
@@ -154,7 +154,26 @@ func deactive(c fiber.Ctx) error {
 	if err := db2.Find(&courses, c.Params("id")).Error; err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.Status(200).JSON(courses)
+	if courses.IsActive == true {
+		courses.IsActive = false
+		db2.Save(&courses)
+	}
+	return c.Status(201).JSON(courses)
+
+}
+
+func CreateEnrollment(c fiber.Ctx) error {
+	var Enrollments Enrollments
+	if err := c.Bind().JSON(Enrollments); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	err := db2.Transaction(func(tx *gorm.DB) error {
+		err := tx.Create(Enrollments).Error
+		if err != nil {
+
+		}
+
+	})
 }
 
 func main() {
@@ -183,7 +202,7 @@ func main() {
 	api.Get("/v1/courses/:id", Getcourses)
 	api.Delete("/v1/courses/:id", DeleteCourse)
 	api.Put("/v1/courses/:id", UpdateCourse)
-	api.Patch("/v1/courses/:id", deactive)
+	api.Patch("/v1/courses/:id/deactivate", deactive)
 
 	log.Fatal(app.Listen(":3000"))
 }
