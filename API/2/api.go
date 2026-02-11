@@ -131,7 +131,7 @@ func Getcourses(c fiber.Ctx) error {
 
 func DeleteCourse(c fiber.Ctx) error {
 	var courses Courses
-	if err := db2.Delete(courses, c.Params("id")).Error; err != nil {
+	if err := db2.Delete(&courses, c.Params("id")).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.Status(200).JSON(courses)
@@ -139,14 +139,22 @@ func DeleteCourse(c fiber.Ctx) error {
 
 func UpdateCourse(c fiber.Ctx) error {
 	var students Students
-	if err := c.Bind().JSON(&students); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	if err := c.Bind().JSON(students); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error(), "data": "Ali khoshtip"})
 	}
 	if err := db2.UpdateColumn(c.Params("id"), students).Error; err != nil {
 
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.Status(200).JSON(students)
+}
+
+func DeactivateCourse(c fiber.Ctx) error {
+	var courses Courses
+	if err := c.Bind().JSON(courses); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	if err:=db2.
 }
 
 func main() {
