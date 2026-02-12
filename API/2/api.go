@@ -35,6 +35,7 @@ type Courses struct {
 	Capacity      int    `gorm:"not null"`
 	EnrolledCount int    `gorm:"default:0;not null"`
 	IsActive      bool   `gorm:"not null;default:true"`
+	ID            uint   `gorm:"primaryKey;autoIncrement;not null"`
 }
 
 type Enrollments struct {
@@ -44,6 +45,7 @@ type Enrollments struct {
 	EnrolledAt *time.Time       `gorm:"not null"`
 	StudentId  int
 	CourseId   int
+	ID         uint `gorm:"primaryKey;autoIncrement;not null"`
 }
 
 func CreateUser(c fiber.Ctx) error {
@@ -168,6 +170,22 @@ func UpdateCourse(c fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.Status(200).JSON(courses)
+
+}
+
+func UpdataCourse2(c fiber.Ctx) error {
+	var courses Courses
+	d := c.Params("id")
+	f, _ := strconv.Atoi(d)
+	asd := Courses{
+		ID:         uint(f),
+		CourseCode: c.Params("course_code"),
+		Title:      c.Params("title"),
+	}
+	if err := db2.Model(&asd.ID).Updates(&asd).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.Status(200).JSON(courses)
 }
 
 func main() {
@@ -197,6 +215,7 @@ func main() {
 	api.Delete("/v1/courses/:id", DeleteCourse)
 	api.Patch("/v1/courses/:id", UpdateCourse)
 	api.Put("/v1/students/:id", UpdateUser2)
+	api.Put("/v1/courses/:id", UpdateUser2)
 
 	log.Fatal(app.Listen(":3000"))
 }
