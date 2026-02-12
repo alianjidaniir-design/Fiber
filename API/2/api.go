@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -24,6 +25,7 @@ type Students struct {
 	StudentCode string `gorm:"size:32;unique;not null"`
 	FirstName   string `gorm:"size:64;not null"`
 	LastName    string `gorm:"size:64;not null"`
+	ID          uint   `gorm:"primaryKey;autoIncrement;not null"`
 }
 
 type Courses struct {
@@ -106,16 +108,17 @@ func UpdateUser(c fiber.Ctx) error {
 
 func UpdateUser2(c fiber.Ctx) error {
 	var students Students
-	if err := c.Bind().JSON(&students); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-	}
+
+	d := c.Params("id")
+	f, _ := strconv.Atoi(d)
 	updateUser := Students{
-		StudentCode: "404040404040",
+		ID:          uint(f),
+		StudentCode: "0928428941",
 		FirstName:   "Ali",
-		LastName:    "alshaieb",
+		LastName:    "Ali",
 	}
-	targetUser := Students{}
-	if err := db2.Model(&students).Updates(updateUser).Error; err != nil {
+
+	if err := db2.Model(&Students{ID: updateUser.ID}).Updates(&updateUser).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.Status(200).JSON(students)
