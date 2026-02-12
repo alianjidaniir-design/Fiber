@@ -104,6 +104,10 @@ func UpdateUser(c fiber.Ctx) error {
 	return c.Status(200).JSON(students)
 }
 
+func UpdateUser2(c fiber.Ctx) error {
+	
+}
+
 func DeleteUser(c fiber.Ctx) error {
 	var students Students
 	if err := db2.Delete(&students, c.Params("id")).Error; err != nil {
