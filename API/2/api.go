@@ -90,16 +90,17 @@ func CreateCourse(c fiber.Ctx) error {
 }
 
 func UpdateUser(c fiber.Ctx) error {
-	var students []Students
-	if err := c.Bind().JSON(students); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 
+	updataData := Students{
+		StudentCode: "40506070809",
+		FirstName:   "John",
+		LastName:    "Smith",
 	}
+	var students Students
 
-	if err := db2.UpdateColumn(c.Params("id"), students).Error; err != nil {
+	if err := db2.Model(&students).Where("id = ?", c.Params("id")).Updates(updataData).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
-
 	return c.Status(200).JSON(students)
 }
 
@@ -149,33 +150,6 @@ func UpdateCourse(c fiber.Ctx) error {
 	return c.Status(200).JSON(students)
 }
 
-func deactive(c fiber.Ctx) error {
-	var courses Courses
-	if err := db2.Find(&courses, c.Params("id")).Error; err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-	}
-	if courses.IsActive == true {
-		courses.IsActive = false
-		db2.Save(&courses)
-	}
-	return c.Status(201).JSON(courses)
-
-}
-
-func CreateEnrollment(c fiber.Ctx) error {
-	var Enrollments Enrollments
-	if err := c.Bind().JSON(Enrollments); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-	}
-	err := db2.Transaction(func(tx *gorm.DB) error {
-		err := tx.Create(Enrollments).Error
-		if err != nil {
-
-		}
-
-	})
-}
-
 func main() {
 	app := fiber.New()
 	dsn := "root:123456@tcp(127.0.0.1:3306)/ali-db?charset=utf8mb4&parseTime=True&loc=Local"
@@ -195,14 +169,13 @@ func main() {
 	api.Post("/v1/students", CreateUser)
 	api.Get("/v2/students", listUsers)
 	api.Get("/v1/students/:id", GetUsers)
-	api.Put("/v1/students", UpdateUser)
+	api.Patch("/v1/students/:id", UpdateUser)
 	api.Delete("/v1/students/:id", DeleteUser)
 	api.Post("/v1/courses", CreateCourse)
 	api.Get("/v1/courses", ListCourses)
 	api.Get("/v1/courses/:id", Getcourses)
 	api.Delete("/v1/courses/:id", DeleteCourse)
-	api.Put("/v1/courses/:id", UpdateCourse)
-	api.Patch("/v1/courses/:id/deactivate", deactive)
+	api.Patch("/v1/courses/:id", UpdateCourse)
 
 	log.Fatal(app.Listen(":3000"))
 }
