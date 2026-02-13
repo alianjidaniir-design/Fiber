@@ -190,18 +190,35 @@ func UpdataCourse2(c fiber.Ctx) error {
 }
 
 func Enrollement(c fiber.Ctx) error {
-	err := db2.Transaction(func(tx *gorm.DB) error {
-		var Enrollment Enrollments
+	var Enrollment Enrollments
+	if err := db2.Transaction(func(tx *gorm.DB) error {
 		var courses Courses
+		var students Students
 		if err := tx.Clauses(clause.Locking{Strength: "Update "}).First(&courses, c.Params("id")).Error; err != nil {
 			return err
 		}
 		if err := tx.Create(&Enrollment).Error; err != nil {
 			return err
 		}
-
-	})
-
+		if students.ID == 0 || courses.ID == 0 {
+			return c.Status(404).JSON(fiber.Map{"error": "student or course not found"})
+		} else if Enrollment.StudentId != 0 {
+			return c.Status(409).JSON(fiber.Map{"error": "student is already enrolled"})
+		} else if courses.EnrolledCount >= courses.Capacity {
+			return c.Status(409).JSON(fiber.Map{"error": "capacity is completed"})
+		} else if courses.IsActive == false {
+			return c.Status(400).JSON(fiber.Map{"error": "course is not active"})
+		} else {
+			courses.EnrolledCount++
+		}
+		if err := tx.Save(&courses).Error; err != nil {
+			return err
+		}
+		return nil
+	}).Error(); err != "" {
+		return c.Status(500).JSON(fiber.Map{"error": "error enrolling courses"})
+	}
+	return c.Status(200).JSON(Enrollement)
 }
 
 func main() {
@@ -232,6 +249,7 @@ func main() {
 	api.Patch("/v1/courses/:id", UpdateCourse)
 	api.Put("/v1/students/:id", UpdateUser2)
 	api.Put("/v1/courses/:id", UpdataCourse2)
+	api.Post("/v1/enrollments", Enrollement)
 
 	log.Fatal(app.Listen(":3000"))
 }
