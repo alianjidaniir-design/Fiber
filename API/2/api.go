@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type EnrollmentStatus string
@@ -182,10 +183,25 @@ func UpdataCourse2(c fiber.Ctx) error {
 		CourseCode: c.Params("course_code"),
 		Title:      c.Params("title"),
 	}
-	if err := db2.Model(&asd.ID).Updates(&asd).Error; err != nil {
+	if err := db2.Model(&Courses{ID: asd.ID}).Updates(&asd).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.Status(200).JSON(courses)
+}
+
+func Enrollement(c fiber.Ctx) error {
+	err := db2.Transaction(func(tx *gorm.DB) error {
+		var Enrollment Enrollments
+		var courses Courses
+		if err := tx.Clauses(clause.Locking{Strength: "Update "}).First(&courses, c.Params("id")).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(&Enrollment).Error; err != nil {
+			return err
+		}
+
+	})
+
 }
 
 func main() {
@@ -215,7 +231,7 @@ func main() {
 	api.Delete("/v1/courses/:id", DeleteCourse)
 	api.Patch("/v1/courses/:id", UpdateCourse)
 	api.Put("/v1/students/:id", UpdateUser2)
-	api.Put("/v1/courses/:id", UpdateUser2)
+	api.Put("/v1/courses/:id", UpdataCourse2)
 
 	log.Fatal(app.Listen(":3000"))
 }
