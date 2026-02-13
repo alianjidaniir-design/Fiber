@@ -216,7 +216,7 @@ func Enrollement(c fiber.Ctx) error {
 		}
 		return nil
 	}).Error(); err != "" {
-		return c.Status(500).JSON(fiber.Map{"error": "error enrolling courses"})
+		return c.Status(500).JSON(fiber.Map{"error": err})
 	}
 	return c.Status(200).JSON(Enrollement)
 }
