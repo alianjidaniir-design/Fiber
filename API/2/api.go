@@ -189,15 +189,15 @@ func UpdataCourse2(c fiber.Ctx) error {
 	return c.Status(200).JSON(courses)
 }
 
-func Enrollement(c fiber.Ctx) error {
-	var enrollment Enrollments
+func CreateEnrollement(c fiber.Ctx) error {
+	enrollment := new(Enrollments)
 	var courses Courses
 	var students Students
 
-	if err := c.Bind().JSON(&enrollment); err != nil {
+	if err := c.Bind().JSON(enrollment); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	if err := db2.Create(&enrollment).Error; err != nil {
+	if err := db2.Create(enrollment).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -256,7 +256,7 @@ func main() {
 	api.Patch("/v1/courses/:id", UpdateCourse)
 	api.Put("/v1/students/:id", UpdateUser2)
 	api.Put("/v1/courses/:id", UpdataCourse2)
-	api.Post("/v1/enrollments", Enrollement)
+	api.Post("/v1/enrollments", CreateEnrollement)
 
 	log.Fatal(app.Listen(":3000"))
 }
