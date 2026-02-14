@@ -44,8 +44,8 @@ type Enrollments struct {
 	Status     EnrollmentStatus `gorm:"size : 10;default:'enrolled';not null"`
 	CanceledAt *time.Time       `gorm:"not null"`
 	EnrolledAt *time.Time       `gorm:"not null"`
-	StudentId  int              `gorm:"not null"`
-	CourseId   int              `gorm:"not null"`
+	StudentId  uint             `gorm:"not null"`
+	CourseId   uint             `gorm:"not null"`
 	ID         uint             `gorm:"primaryKey;autoIncrement;not null"`
 }
 
@@ -194,30 +194,26 @@ func CreateEnrollement(c fiber.Ctx) error {
 	var courses Courses
 	var students Students
 
+	if enrollment.StudentId != students.ID || enrollment.CourseId != courses.ID {
+		return c.Status(404).JSON(fiber.Map{"error": "student or course not found"})
+	} else if enrollment.StudentId != 0 {
+		return c.Status(409).JSON(fiber.Map{"error": "student is already enrolled"})
+	} else if courses.EnrolledCount >= courses.Capacity {
+		return c.Status(409).JSON(fiber.Map{"error": "capacity is completed"})
+	} else if courses.IsActive == false {
+		return c.Status(400).JSON(fiber.Map{"error": "course is not active"})
+	}
+
+	if err := db2.Create(enrollment).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error(), "Ali": "Ali"})
+	}
+
 	err := db2.Transaction(func(tx *gorm.DB) error {
 
-		if err := tx.Clauses(clause.Locking{Strength: "Update "}).First(&courses).Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "Update "}).First(&courses, "enrolled_Count").Error; err != nil {
 			return err
 		}
-
-		if err := c.Bind().JSON(enrollment); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-		}
-		if err := db2.Create(enrollment).Error; err != nil {
-			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
-		}
-
-		if students.ID == 0 || courses.ID == 0 {
-			return c.Status(404).JSON(fiber.Map{"error": "student or course not found"})
-		} else if enrollment.StudentId != 0 {
-			return c.Status(409).JSON(fiber.Map{"error": "student is already enrolled"})
-		} else if courses.EnrolledCount >= courses.Capacity {
-			return c.Status(409).JSON(fiber.Map{"error": "capacity is completed"})
-		} else if courses.IsActive == false {
-			return c.Status(400).JSON(fiber.Map{"error": "course is not active"})
-		}
-
-		courses.EnrolledCount++
+		courses.EnrolledCount += 1
 		if err := tx.Save(&courses).Error; err != nil {
 			return err
 		}
