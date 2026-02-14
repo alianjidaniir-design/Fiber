@@ -194,17 +194,17 @@ func CreateEnrollement(c fiber.Ctx) error {
 	var courses Courses
 	var students Students
 
-	if err := c.Bind().JSON(enrollment); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-	}
-	if err := db2.Create(enrollment).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
-	}
-
-	if err := db2.Transaction(func(tx *gorm.DB) error {
+	err := db2.Transaction(func(tx *gorm.DB) error {
 
 		if err := tx.Clauses(clause.Locking{Strength: "Update "}).First(&courses).Error; err != nil {
 			return err
+		}
+
+		if err := c.Bind().JSON(enrollment); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+		if err := db2.Create(enrollment).Error; err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		}
 
 		if students.ID == 0 || courses.ID == 0 {
@@ -222,8 +222,9 @@ func CreateEnrollement(c fiber.Ctx) error {
 			return err
 		}
 		return nil
-	}).Error(); err != "" {
-		return c.Status(500).JSON(fiber.Map{"error": err})
+	})
+	if err != nil {
+		return err
 	}
 	return c.Status(201).JSON(enrollment)
 }
