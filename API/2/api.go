@@ -96,14 +96,14 @@ func CreateCourse(c fiber.Ctx) error {
 
 func UpdateUser(c fiber.Ctx) error {
 
-	updataData := Students{
+	updateData := Students{
 		StudentCode: "40506070809",
 		FirstName:   "John",
 		LastName:    "Smith",
 	}
 	var students Students
 
-	if err := db2.Model(&students).Where("id = ?", c.Params("id")).Updates(updataData).Error; err != nil {
+	if err := db2.Model(&students).Where("id = ?", c.Params("id")).Updates(updateData).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.Status(200).JSON(students)
@@ -146,7 +146,7 @@ func ListCourses(c fiber.Ctx) error {
 
 }
 
-func Getcourses(c fiber.Ctx) error {
+func Recourses(c fiber.Ctx) error {
 	var courses Courses
 	if err := db2.Find(&courses, c.Params("id")).Error; err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error2": err.Error()})
@@ -174,7 +174,7 @@ func UpdateCourse(c fiber.Ctx) error {
 
 }
 
-func UpdataCourse2(c fiber.Ctx) error {
+func UpdateCourse2(c fiber.Ctx) error {
 	var courses Courses
 	d := c.Params("id")
 	f, _ := strconv.Atoi(d)
@@ -189,36 +189,28 @@ func UpdataCourse2(c fiber.Ctx) error {
 	return c.Status(200).JSON(courses)
 }
 
-func CreateEnrollement(c fiber.Ctx) error {
+func CreateEnrollment(c fiber.Ctx) error {
 	enrollment := new(Enrollments)
 	var courses Courses
 	var students Students
-
-	if err := db2.Find(courses, c.Params("id")).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
-	}
-	if err := db2.Find(students, c.Params("id")).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
-	}
-
-	if enrollment.StudentId != students.ID || enrollment.CourseId != courses.ID {
-		return c.Status(404).JSON(fiber.Map{"error": "student or course not found"})
-	} else if enrollment.StudentId != 0 {
-		return c.Status(409).JSON(fiber.Map{"error": "student is already enrolled"})
-	} else if courses.EnrolledCount >= courses.Capacity {
-		return c.Status(409).JSON(fiber.Map{"error": "capacity is completed"})
-	} else if courses.IsActive == false {
-		return c.Status(400).JSON(fiber.Map{"error": "course is not active"})
-	}
-
-	if err := db2.Create(enrollment).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error(), "Ali": "Ali"})
-	}
 
 	err := db2.Transaction(func(tx *gorm.DB) error {
 
 		if err := tx.Clauses(clause.Locking{Strength: "Update "}).First(&courses, "enrolled_Count").Error; err != nil {
 			return err
+		}
+		if enrollment.StudentId != students.ID && enrollment.CourseId != courses.ID {
+			return c.Status(404).JSON(fiber.Map{"error": "stud ent or course not found"})
+		} else if enrollment.StudentId != 0 {
+			return c.Status(409).JSON(fiber.Map{"error": "student is already enrolled"})
+		} else if courses.EnrolledCount >= courses.Capacity {
+			return c.Status(409).JSON(fiber.Map{"error": "capacity is completed"})
+		} else if courses.IsActive == false {
+			return c.Status(400).JSON(fiber.Map{"error": "course is not active"})
+		}
+
+		if err := db2.Create(enrollment).Error; err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error(), "Ali": "Ali"})
 		}
 		courses.EnrolledCount += 1
 		if err := tx.Save(&courses).Error; err != nil {
@@ -255,12 +247,12 @@ func main() {
 	api.Delete("/v1/students/:id", DeleteUser)
 	api.Post("/v1/courses", CreateCourse)
 	api.Get("/v1/courses", ListCourses)
-	api.Get("/v1/courses/:id", Getcourses)
+	api.Get("/v1/courses/:id", Recourses)
 	api.Delete("/v1/courses/:id", DeleteCourse)
 	api.Patch("/v1/courses/:id", UpdateCourse)
 	api.Put("/v1/students/:id", UpdateUser2)
-	api.Put("/v1/courses/:id", UpdataCourse2)
-	api.Post("/v1/enrollments", CreateEnrollement)
+	api.Put("/v1/courses/:id", UpdateCourse2)
+	api.Post("/v1/enrollments", CreateEnrollment)
 
 	log.Fatal(app.Listen(":3000"))
 }
