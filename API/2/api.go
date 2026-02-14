@@ -191,14 +191,22 @@ func UpdateCourse2(c fiber.Ctx) error {
 
 func CreateEnrollment(c fiber.Ctx) error {
 	enrollment := new(Enrollments)
-	var courses Courses
-	var students Students
+	courses := new(Courses)
+	students := new(Students)
 
 	if err := c.Bind().JSON(enrollment); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if enrollment.StudentId != students.ID && enrollment.CourseId != courses.ID {
+	if err := c.Bind().JSON(students); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if err := c.Bind().JSON(courses); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if enrollment.StudentId != students.ID || enrollment.CourseId != courses.ID {
 		return c.Status(404).JSON(fiber.Map{"error": "student or course not found"})
 	} else if enrollment.StudentId != 0 {
 		return c.Status(409).JSON(fiber.Map{"error": "student is already enrolled"})
@@ -260,4 +268,5 @@ func main() {
 	api.Post("/v1/enrollments", CreateEnrollment)
 
 	log.Fatal(app.Listen(":3000"))
+
 }
