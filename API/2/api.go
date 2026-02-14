@@ -214,10 +214,20 @@ func CreateEnrollment(c fiber.Ctx) error {
 
 	err := db2.Transaction(func(tx *gorm.DB) error {
 
-		if err := tx.Clauses(clause.Locking{Strength: "Update "}).First(&courses, "enrolled_Count").Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "Update "}).First(&courses, courses.Capacity).Error; err != nil {
 			return err
 		}
-		courses.EnrolledCount += 1
+		if courses.Capacity <= courses.EnrolledCount {
+			return c.Status(409).JSON(fiber.Map{"error": "capacity is completed"})
+		}
+		courses.Capacity--
+		if err := tx.Save(&courses).Error; err != nil {
+			return err
+		}
+		if err := tx.Clauses(clause.Locking{Strength: "Update"}).First(&courses, courses.EnrolledCount).Error; err != nil {
+			return err
+		}
+		courses.EnrolledCount++
 		if err := tx.Save(&courses).Error; err != nil {
 			return err
 		}
