@@ -194,6 +194,13 @@ func CreateEnrollement(c fiber.Ctx) error {
 	var courses Courses
 	var students Students
 
+	if err := db2.Find(courses, c.Params("id")).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	if err := db2.Find(students, c.Params("id")).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
 	if enrollment.StudentId != students.ID || enrollment.CourseId != courses.ID {
 		return c.Status(404).JSON(fiber.Map{"error": "student or course not found"})
 	} else if enrollment.StudentId != 0 {
