@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -201,20 +202,19 @@ func CreateEnrollment(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if enrollment.CourseId != (courses).ID {
-		return c.Status(404).JSON(fiber.Map{"error": "student or course not found"})
-	} else if enrollment.StudentId != 0 {
-		return c.Status(409).JSON(fiber.Map{"error": "student is already enrolled"})
-	} else if (courses).EnrolledCount >= (courses).Capacity {
-		return c.Status(409).JSON(fiber.Map{"error": "capacity is completed"})
-	} else if (courses).IsActive == false {
-		return c.Status(400).JSON(fiber.Map{"error": "course is not active"})
+
+	var count int64
+	dd := db2.Where("student_id = ?", enrollment.StudentId).First(&enrollment).Count(&count)
+
+	if errors.Is(dd.Error, gorm.ErrRecordNotFound) {
+		return c.Status(400).JSON(fiber.Map{"error": "student_id does not exist"})
 	}
 
 	if err := db2.Create(&enrollment).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error(), "Ali": "Ali"})
 	}
 
+	 if err:=db2.Joins()
 	if err := db2.Transaction(func(tx *gorm.DB) error {
 
 		if err := tx.Clauses(clause.Locking{Strength: "Update "}).First(&courses, (courses).Capacity).Error; err != nil {
