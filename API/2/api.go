@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -202,13 +203,7 @@ func CreateEnrollment(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if err := db2.Find(students, c.Params("id")).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
-	}
-
-	if students.ID != enrollment.StudentId {
-		return c.Status(400).JSON(fiber.Map{"error": "student_id does not exist"})
-	}
+	err := db2.Model(&Students{}).Where("id = ?", c.Params("id")).Find(&students.ID).Error
 
 	if err := db2.Create(&enrollment).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error(), "Ali": "Ali"})
