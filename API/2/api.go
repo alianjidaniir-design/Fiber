@@ -11,11 +11,10 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"gorm.io/gorm/logger"
 )
 
 type EnrollmentStatus string
-
-var db2 *gorm.DB
 
 const (
 	StatusEnrolled EnrollmentStatus = "enrolled"
@@ -50,8 +49,21 @@ type Enrollments struct {
 	ID         uint             `gorm:"primaryKey;autoIncrement;not null"`
 }
 
+func database() *gorm.DB {
+	dsn := "root:123456@tcp(127.0.0.1:3306)/ali-db?charset=utf8mb4&parseTime=True&loc=Local"
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
+	if err != nil {
+		panic("failed to connect database")
+	}
+	return db
+}
+
 func CreateUser(c fiber.Ctx) error {
 	students := new(Students)
+
+	db2 := database()
 
 	if err := c.Bind().JSON(students); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -69,6 +81,8 @@ func CreateUser(c fiber.Ctx) error {
 func listUsers(c fiber.Ctx) error {
 	var students []Students
 
+	db2 := database()
+
 	if err := db2.Find(&students, c.Params("id")).Error; err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -77,6 +91,8 @@ func listUsers(c fiber.Ctx) error {
 
 func GetUsers(c fiber.Ctx) error {
 	var students Students
+
+	db2 := database()
 	if err := db2.Find(&students, c.Params("id")).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -85,6 +101,9 @@ func GetUsers(c fiber.Ctx) error {
 
 func CreateCourse(c fiber.Ctx) error {
 	var course Courses
+
+	db2 := database()
+
 	if err := c.Bind().JSON(&course); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -104,6 +123,8 @@ func UpdateUser(c fiber.Ctx) error {
 	}
 	var students Students
 
+	db2 := database()
+
 	if err := db2.Model(&students).Where("id = ?", c.Params("id")).Updates(updateData).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -112,6 +133,8 @@ func UpdateUser(c fiber.Ctx) error {
 
 func UpdateUser2(c fiber.Ctx) error {
 	var students Students
+
+	db2 := database()
 
 	d := c.Params("id")
 	f, _ := strconv.Atoi(d)
@@ -131,6 +154,9 @@ func UpdateUser2(c fiber.Ctx) error {
 
 func DeleteUser(c fiber.Ctx) error {
 	var students Students
+
+	db2 := database()
+
 	if err := db2.Delete(&students, c.Params("id")).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -140,6 +166,9 @@ func DeleteUser(c fiber.Ctx) error {
 
 func ListCourses(c fiber.Ctx) error {
 	var courses []Courses
+
+	db2 := database()
+
 	if err := db2.Find(&courses, c.Params("id")).Error; err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error1": err.Error()})
 	}
@@ -149,6 +178,9 @@ func ListCourses(c fiber.Ctx) error {
 
 func Recourses(c fiber.Ctx) error {
 	var courses Courses
+
+	db2 := database()
+
 	if err := db2.Find(&courses, c.Params("id")).Error; err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error2": err.Error()})
 	}
@@ -157,6 +189,9 @@ func Recourses(c fiber.Ctx) error {
 
 func DeleteCourse(c fiber.Ctx) error {
 	var courses Courses
+
+	db2 := database()
+
 	if err := db2.Delete(&courses, c.Params("id")).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -168,6 +203,9 @@ func UpdateCourse(c fiber.Ctx) error {
 		"is_active": false,
 	}
 	var courses Courses
+
+	db2 := database()
+
 	if err := db2.Model(&courses).Where("id = ?", c.Params("id")).Updates(couserData).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -177,6 +215,9 @@ func UpdateCourse(c fiber.Ctx) error {
 
 func UpdateCourse2(c fiber.Ctx) error {
 	var courses Courses
+
+	db2 := database()
+
 	d := c.Params("id")
 	f, _ := strconv.Atoi(d)
 	asd := Courses{
@@ -193,6 +234,9 @@ func UpdateCourse2(c fiber.Ctx) error {
 func CreateEnrollment(c fiber.Ctx) error {
 	var enrollment Enrollments
 	var courses Courses
+
+	db2 := database()
+
 	if err := db2.Transaction(func(tx *gorm.DB) error {
 
 		if err := c.Bind().JSON(&enrollment); err != nil {
@@ -207,7 +251,8 @@ func CreateEnrollment(c fiber.Ctx) error {
 			ID: enrollment.StudentId,
 		}
 		course := Courses{
-			ID: enrollment.CourseId,
+			ID:       enrollment.CourseId,
+			Capacity: courses.Capacity,
 		}
 
 		err := db2.First(&student, "id = ? ", enrollment.StudentId).Error
@@ -222,12 +267,11 @@ func CreateEnrollment(c fiber.Ctx) error {
 				return c.Status(404).JSON(fiber.Map{"code": 404, "message": "course not found"})
 			}
 		}
-		err := db2.First(enrollment, "id = ? , id = ? ", enrollment.StudentId, enrollment.CourseId).Error
+		err = db2.First(enrollment, "id = ? , id = ? ", enrollment.StudentId, enrollment.CourseId).Error
 		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return c.Status(404).JSON(fiber.Map{"code": 404, "message": "student or course not found"})
+			if errors.Is(err, gorm.ErrDuplicatedKey) {
+				return c.Status(409).JSON(fiber.Map{"code": 409, "message": "student already enrolled"})
 			}
-
 		}
 
 		if err := db2.Create(&enrollment).Error; err != nil {
@@ -264,15 +308,9 @@ func CreateEnrollment(c fiber.Ctx) error {
 
 func main() {
 	app := fiber.New()
-	dsn := "root:123456@tcp(127.0.0.1:3306)/ali-db?charset=utf8mb4&parseTime=True&loc=Local"
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-	}
+	db := database()
 
-	db2 = db
-
-	err = db.AutoMigrate(&Students{}, &Courses{}, &Enrollments{})
+	err := db.AutoMigrate(&Students{}, &Courses{}, &Enrollments{})
 	if err != nil {
 		panic("failed to connect database")
 	}
