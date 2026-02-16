@@ -193,30 +193,39 @@ func UpdateCourse2(c fiber.Ctx) error {
 func CreateEnrollment(c fiber.Ctx) error {
 	var enrollment Enrollments
 	var courses Courses
-	var students Students
-
-	if err := c.Bind().JSON(&enrollment); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-	}
-
-	if err := c.Bind().JSON(&courses); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-	}
-
-	enrollment.StudentId = students.ID
-	err := db2.Model(&Students{}).Where("id = ?", enrollment.StudentId).Find(&students.ID).Error
-
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error() + "Salam"})
-		}
-	}
-
-	if err := db2.Create(&enrollment).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error(), "Ali": "Ali"})
-	}
-
 	if err := db2.Transaction(func(tx *gorm.DB) error {
+
+		if err := c.Bind().JSON(&enrollment); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		if err := c.Bind().JSON(&courses); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		student := Students{
+			ID: enrollment.StudentId,
+		}
+		course := Courses{
+			ID: enrollment.CourseId,
+		}
+
+		err := db2.First(&student, "id = ? ", enrollment.StudentId).Error
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return c.Status(404).JSON(fiber.Map{"code": 404, "message": "student not found"})
+			}
+		}
+		err = db2.First(&course, "id = ? ", enrollment.CourseId).Error
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return c.Status(404).JSON(fiber.Map{"code": 404, "message": "course not found"})
+			}
+		}
+
+		if err := db2.Create(&enrollment).Error; err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error(), "Ali": "Ali"})
+		}
 
 		if err := tx.Clauses(clause.Locking{Strength: "Update "}).First(&courses, (courses).Capacity).Error; err != nil {
 			return err
