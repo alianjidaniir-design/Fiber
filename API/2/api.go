@@ -203,7 +203,14 @@ func CreateEnrollment(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	err := db2.Model(&Students{}).Where("id = ?", c.Params("id")).Find(&students.ID).Error
+	enrollment.StudentId = students.ID
+	err := db2.Model(&Students{}).Where("id = ?", enrollment.StudentId).Find(&students.ID).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error() + "Salam"})
+		}
+	}
 
 	if err := db2.Create(&enrollment).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error(), "Ali": "Ali"})
