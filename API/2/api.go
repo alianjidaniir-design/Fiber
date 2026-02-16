@@ -222,6 +222,13 @@ func CreateEnrollment(c fiber.Ctx) error {
 				return c.Status(404).JSON(fiber.Map{"code": 404, "message": "course not found"})
 			}
 		}
+		err := db2.First(enrollment, "id = ? , id = ? ", enrollment.StudentId, enrollment.CourseId).Error
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return c.Status(404).JSON(fiber.Map{"code": 404, "message": "student or course not found"})
+			}
+
+		}
 
 		if err := db2.Create(&enrollment).Error; err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": err.Error(), "Ali": "Ali"})
