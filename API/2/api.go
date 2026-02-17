@@ -296,9 +296,9 @@ func t(c fiber.Ctx) error {
 		if err := tx.Save(&courses).Error; err != nil {
 			return err
 		}
-		return c.Status(200).JSON(courses)
+		return nil
 	})
-	return nil
+	return c.Status(200).JSON(fiber.Map{"code": 200, "message": "success"})
 }
 
 func main() {
