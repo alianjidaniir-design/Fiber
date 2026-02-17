@@ -41,11 +41,11 @@ type Courses struct {
 type Enrollments struct {
 	gorm.Model
 	Status     EnrollmentStatus `gorm:"size : 10;default:'enrolled';not null"`
-	CanceledAt *time.Time       `gorm:"not null"`
-	EnrolledAt *time.Time       `gorm:"not null"`
-	StudentId  uint             `gorm:"unique;not null"`
-	CourseId   uint             `gorm:"not null"`
-	ID         uint             `gorm:"primaryKey;autoIncrement;not null"`
+	CanceledAt time.Time
+	EnrolledAt time.Time `gorm:"autoCreateTime:milli"`
+	StudentId  uint      `gorm:"unique;not null"`
+	CourseId   uint      `gorm:"not null"`
+	ID         uint      `gorm:"primaryKey;autoIncrement;not null"`
 }
 
 func database() *gorm.DB {
@@ -248,7 +248,7 @@ func CreateEnrollment(c fiber.Ctx, tx *gorm.DB) error {
 	}
 
 	if course.Capacity <= (course).EnrolledCount {
-		return c.Status(409).JSON(fiber.Map{{"error": {"code": 409, "massage": "capacity is completed"}}})
+		return c.Status(409).JSON(fiber.Map{"code": 409, "massage": "capacity is completed"})
 	}
 
 	if err := tx.Create(&enrollment).Error; err != nil {
@@ -262,6 +262,23 @@ func CreateEnrollment(c fiber.Ctx, tx *gorm.DB) error {
 	}
 
 	return c.Status(200).JSON(enrollment)
+}
+
+func Cansele(c fiber.Ctx, tx *gorm.DB) error {
+	var enrollment Enrollments
+	var course Courses
+	var student Students
+
+	if err := c.Bind().JSON(&enrollment); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&enrollment, "id = ?", c.Params("id")).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	if err := tx.First(&course, "id = ?", c.Params("id")).Error; err != nil {
+	}
+
 }
 
 func ErrorHandler(c fiber.Ctx) error {
