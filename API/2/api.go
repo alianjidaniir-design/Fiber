@@ -240,66 +240,48 @@ func CreateEnrollment(c fiber.Ctx, tx *gorm.DB) error {
 		ID: enrollment.StudentId,
 	}
 	course := Courses{
-		ID:       enrollment.CourseId,
-		Capacity: courses.Capacity,
+		ID:            enrollment.CourseId,
+		EnrolledCount: 0,
 	}
-
-	if err := tx.First(&student, "id = ? ", enrollment.StudentId).Error; err != nil {
+	if err := tx.First(&student, enrollment.StudentId).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return c.Status(404).JSON(fiber.Map{"code": 404, "message": "student not found"})
 		}
 	}
-	if err := tx.First(&course, "id = ? ", enrollment.CourseId).Error; err != nil {
+	if err := tx.First(&course, enrollment.CourseId).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return c.Status(409).JSON(fiber.Map{"code": 409, "message": "course not found"})
 		}
 	}
 
-	if err := tx.Create(&enrollment).Error; err != nil {
+	if err := tx.Clauses(clause.Locking{Strength: "Update"}).First(&course, course.EnrolledCount).Error; err != nil {
 		return c.Status(409).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	cc := courses.Capacity
-	var enrollments Enrollments
-	cc2 := Courses{
-		ID:            enrollments.CourseId,
-		EnrolledCount: 0,
-	}
-
-	if err := tx.Clauses(clause.Locking{Strength: "Update"}).First(&cc2, cc2.EnrolledCount).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
-	}
-
-	if cc <= (cc2).EnrolledCount {
+	if courses.Capacity <= (course).EnrolledCount {
 		return c.Status(409).JSON(fiber.Map{"error": "capacity is completed"})
 	}
 
+	(course).EnrolledCount++
 
-	(courses).EnrolledCount++
-	if err := tx.Save(&courses).Error; err != nil {
-		return err
+	if err := tx.Create(&enrollment).Error; err != nil {
+		return c.Status(409).JSON(fiber.Map{"error": err.Error()})
 	}
-
+	if err := tx.Save(&courses).Error; err != nil {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"ok": true})
+	}
 
 	return c.Status(200).JSON(enrollment)
 }
 
-func t(t fiber.Ctx) error {
+func ErrorHandler(t fiber.Ctx) error {
 	db2 := database()
 
 	err := db2.Transaction(func(tx *gorm.DB) error {
-
-		err := CreateEnrollment(t, x)
-		if err != nil {
-			return t.Status(500).JSON(fiber.Map{"error": err.Error()})
-		}
-
-
-		}
-		return nil
-	}).Error()
-	if err != "" {
-		return t.Status(500).JSON(fiber.Map{"error": err})
+		return CreateEnrollment(t, db2)
+	})
+	if err != nil {
+		return t.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	return t.Status(200).JSON(fiber.Map{"ok": true})
 }
@@ -326,8 +308,7 @@ func main() {
 	api.Patch("/v1/courses/:id", UpdateCourse)
 	api.Put("/v1/students/:id", UpdateUser2)
 	api.Put("/v1/courses/:id", UpdateCourse2)
-	//api.Post("/v1/enrollments", CreateEnrollment)
-	api.Post("/v1/enrollment", t)
+	api.Post("/v1/enrollment", ErrorHandler)
 
 	log.Fatal(app.Listen(":3000"))
 
