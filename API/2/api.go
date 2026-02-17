@@ -230,70 +230,54 @@ func UpdateCourse2(c fiber.Ctx) error {
 
 func CreateEnrollment(c fiber.Ctx, tx *gorm.DB) error {
 	var enrollment Enrollments
-	var courses Courses
+	var course Courses
+	var student Students
 
 	if err := c.Bind().JSON(&enrollment); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	student := Students{
-		ID: enrollment.StudentId,
-	}
-	course := Courses{
-		ID:            enrollment.CourseId,
-		EnrolledCount: 0,
-	}
 	if err := tx.First(&student, enrollment.StudentId).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return c.Status(404).JSON(fiber.Map{"code": 404, "message": "student not found"})
 		}
 	}
-	if err := tx.First(&course, enrollment.CourseId).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return c.Status(409).JSON(fiber.Map{"code": 409, "message": "course not found"})
-		}
-	}
 
-	if err := tx.Clauses(clause.Locking{Strength: "Update"}).First(&course, course.EnrolledCount).Error; err != nil {
+	if err := tx.Clauses(clause.Locking{Strength: "Update"}).First(&course, "id = ?", enrollment.CourseId).Error; err != nil {
 		return c.Status(409).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if courses.Capacity <= (course).EnrolledCount {
-		return c.Status(409).JSON(fiber.Map{"error": "capacity is completed"})
+	if course.Capacity <= (course).EnrolledCount {
+		return c.Status(409).JSON(fiber.Map{{"error": {"code": 409, "massage": "capacity is completed"}}})
 	}
-
-	(course).EnrolledCount++
 
 	if err := tx.Create(&enrollment).Error; err != nil {
-		return c.Status(409).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
-	if err := tx.Save(&courses).Error; err != nil {
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{"ok": true})
+
+	course.EnrolledCount++
+
+	if err := tx.Save(&course).Error; err != nil {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"err": err.Error()})
 	}
 
 	return c.Status(200).JSON(enrollment)
 }
 
-func ErrorHandler(t fiber.Ctx) error {
+func ErrorHandler(c fiber.Ctx) error {
 	db2 := database()
 
 	err := db2.Transaction(func(tx *gorm.DB) error {
-		return CreateEnrollment(t, db2)
+		return CreateEnrollment(c, db2)
 	})
 	if err != nil {
-		return t.Status(500).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(500).JSON(fiber.Map{"error": err})
 	}
-	return t.Status(200).JSON(fiber.Map{"ok": true})
+	return nil
 }
 
 func main() {
 	app := fiber.New()
-	db := database()
-
-	err := db.AutoMigrate(&Students{}, &Courses{}, &Enrollments{})
-	if err != nil {
-		panic("failed to connect database")
-	}
 
 	api := app.Group("/api")
 	api.Post("/v1/students", CreateUser)
