@@ -11,7 +11,6 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"gorm.io/gorm/logger"
 )
 
 type EnrollmentStatus string
@@ -51,9 +50,7 @@ type Enrollments struct {
 
 func database() *gorm.DB {
 	dsn := "root:123456@tcp(127.0.0.1:3306)/ali-db?charset=utf8mb4&parseTime=True&loc=Local"
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
-	})
+	db, err := gorm.Open(mysql.Open(dsn))
 	if err != nil {
 		panic("failed to connect database")
 	}
@@ -237,46 +234,47 @@ func CreateEnrollment(c fiber.Ctx) error {
 
 	db2 := database()
 
-	if err := db2.Transaction(func(tx *gorm.DB) error {
+	if err := c.Bind().JSON(&enrollment); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
 
-		if err := c.Bind().JSON(&enrollment); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-		}
+	student := Students{
+		ID: enrollment.StudentId,
+	}
+	course := Courses{
+		ID:       enrollment.CourseId,
+		Capacity: courses.Capacity,
+	}
+	enroll := Enrollments{
+		StudentId: enrollment.StudentId,
+	}
 
-		if err := c.Bind().JSON(&courses); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	if err := db2.First(&student, "id = ? ", enrollment.StudentId).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return c.Status(404).JSON(fiber.Map{"code": 404, "message": "student not found"})
 		}
+	}
+	if err := db2.First(&course, "id = ? ", enrollment.CourseId).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return c.Status(404).JSON(fiber.Map{"code": 404, "message": "course not found"})
+		}
+	}
+	if err := db2.First(&enrollment, "student_id = ? ", enroll.StudentId).Error; err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return c.Status(409).JSON(fiber.Map{"code": 409, "message": "student already enrolled"})
+		}
+	}
 
-		student := Students{
-			ID: enrollment.StudentId,
-		}
-		course := Courses{
-			ID:       enrollment.CourseId,
-			Capacity: courses.Capacity,
-		}
+	if err := db2.Create(&enrollment).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error(), "Ali": "Ali"})
+	}
+	return c.Status(200).JSON(enrollment)
+}
 
-		err := db2.First(&student, "id = ? ", enrollment.StudentId).Error
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return c.Status(404).JSON(fiber.Map{"code": 404, "message": "student not found"})
-			}
-		}
-		err = db2.First(&course, "id = ? ", enrollment.CourseId).Error
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return c.Status(404).JSON(fiber.Map{"code": 404, "message": "course not found"})
-			}
-		}
-		err = db2.First(enrollment, "id = ? , id = ? ", enrollment.StudentId, enrollment.CourseId).Error
-		if err != nil {
-			if errors.Is(err, gorm.ErrDuplicatedKey) {
-				return c.Status(409).JSON(fiber.Map{"code": 409, "message": "student already enrolled"})
-			}
-		}
-
-		if err := db2.Create(&enrollment).Error; err != nil {
-			return c.Status(500).JSON(fiber.Map{"error": err.Error(), "Ali": "Ali"})
-		}
+func t(c fiber.Ctx) error {
+	db2 := database()
+	db2.Transaction(func(tx *gorm.DB) error {
+		var courses Courses
 
 		if err := tx.Clauses(clause.Locking{Strength: "Update "}).First(&courses, (courses).Capacity).Error; err != nil {
 			return err
@@ -295,15 +293,9 @@ func CreateEnrollment(c fiber.Ctx) error {
 		if err := tx.Save(&courses).Error; err != nil {
 			return err
 		}
-		return nil
-	}).Error(); err != "" {
-		return c.Status(500).JSON(fiber.Map{"error": err})
-	}
-	if err := db2.Create(&courses).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
-	}
-
-	return c.Status(201).JSON(&enrollment)
+		return c.Status(200).JSON(courses)
+	})
+	return nil
 }
 
 func main() {
