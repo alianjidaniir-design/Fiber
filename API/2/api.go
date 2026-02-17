@@ -43,7 +43,7 @@ type Enrollments struct {
 	Status     EnrollmentStatus `gorm:"size : 10;default:'enrolled';not null"`
 	CanceledAt *time.Time       `gorm:"not null"`
 	EnrolledAt *time.Time       `gorm:"not null"`
-	StudentId  uint             `gorm:"not null"`
+	StudentId  uint             `gorm:"unique;not null"`
 	CourseId   uint             `gorm:"not null"`
 	ID         uint             `gorm:"primaryKey;autoIncrement;not null"`
 }
@@ -245,9 +245,6 @@ func CreateEnrollment(c fiber.Ctx) error {
 		ID:       enrollment.CourseId,
 		Capacity: courses.Capacity,
 	}
-	enroll := Enrollments{
-		StudentId: enrollment.StudentId,
-	}
 
 	if err := db2.First(&student, "id = ? ", enrollment.StudentId).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -256,37 +253,43 @@ func CreateEnrollment(c fiber.Ctx) error {
 	}
 	if err := db2.First(&course, "id = ? ", enrollment.CourseId).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return c.Status(404).JSON(fiber.Map{"code": 404, "message": "course not found"})
-		}
-	}
-	if err := db2.First(&enrollment, "student_id = ? ", enroll.StudentId).Error; err != nil {
-		if errors.Is(err, gorm.ErrDuplicatedKey) {
-			return c.Status(409).JSON(fiber.Map{"code": 409, "message": "student already enrolled"})
+			return c.Status(409).JSON(fiber.Map{"code": 409, "message": "course not found"})
 		}
 	}
 
 	if err := db2.Create(&enrollment).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error(), "Ali": "Ali"})
+		return c.Status(409).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.Status(200).JSON(enrollment)
 }
 
 func t(c fiber.Ctx) error {
 	db2 := database()
+
 	db2.Transaction(func(tx *gorm.DB) error {
 		var courses Courses
+		cc := courses.Capacity
 
-		if err := tx.Clauses(clause.Locking{Strength: "Update "}).First(&courses, (courses).Capacity).Error; err != nil {
+		err := CreateEnrollment(c)
+		if err != nil {
 			return err
 		}
-		if (courses).Capacity <= (courses).EnrolledCount {
+		var enrollments Enrollments
+		cc2 := Courses{
+			ID:            enrollments.CourseId,
+			Capacity:      cc,
+			EnrolledCount: 0,
+		}
+
+		if err := tx.Clauses(clause.Locking{Strength: "Update"}).First(&cc2, cc).Error; err != nil {
+			return err
+		}
+		if cc <= (cc2).EnrolledCount {
 			return c.Status(409).JSON(fiber.Map{"error": "capacity is completed"})
 		}
-		(courses).Capacity--
-		if err := tx.Save(&courses).Error; err != nil {
-			return err
-		}
-		if err := tx.Clauses(clause.Locking{Strength: "Update"}).First(&courses, (courses).EnrolledCount).Error; err != nil {
+		cc--
+
+		if err := tx.Clauses(clause.Locking{Strength: "Update"}).First(&cc2, cc2.EnrolledCount).Error; err != nil {
 			return err
 		}
 		(courses).EnrolledCount++
