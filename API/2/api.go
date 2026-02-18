@@ -16,7 +16,6 @@ import (
 type EnrollmentStatus string
 
 const (
-	StatusEnrolled EnrollmentStatus = "enrolled"
 	StatusCanceled EnrollmentStatus = "canceled"
 )
 
@@ -267,7 +266,6 @@ func CreateEnrollment(c fiber.Ctx, tx *gorm.DB) error {
 func Cansele(c fiber.Ctx, tx *gorm.DB) error {
 	var enrollment Enrollments
 	var course Courses
-	var student Students
 
 	if err := c.Bind().JSON(&enrollment); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
@@ -276,14 +274,42 @@ func Cansele(c fiber.Ctx, tx *gorm.DB) error {
 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&enrollment, "id = ?", c.Params("id")).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
-	if err := tx.First(&course, "id = ?", c.Params("id")).Error; err != nil {
+	if err := tx.First(&enrollment, "id = ?", c.Params("id")).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return c.Status(404).JSON(fiber.Map{"code": 404, "message": "student not found in enrollments"})
+		} else if enrollment.Status != "enrolled" {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"code": 403, "message": "student is not enrolled"})
+		}
 	}
+	m := Enrollments{
+		Status:     StatusCanceled,
+		CanceledAt: time.Now(),
+	}
+	if err := tx.Create(&m).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	course.EnrolledCount--
 
+	if err := tx.Save(&course).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.Status(200).JSON(enrollment)
 }
 
 func ErrorHandler(c fiber.Ctx) error {
 	db2 := database()
 
+	err := db2.Transaction(func(tx *gorm.DB) error {
+		return CreateEnrollment(c, db2)
+	})
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err})
+	}
+	return nil
+}
+
+func handleercacle(c fiber.Ctx) error {
+	db2 := database()
 	err := db2.Transaction(func(tx *gorm.DB) error {
 		return CreateEnrollment(c, db2)
 	})
@@ -310,6 +336,7 @@ func main() {
 	api.Put("/v1/students/:id", UpdateUser2)
 	api.Put("/v1/courses/:id", UpdateCourse2)
 	api.Post("/v1/enrollment", ErrorHandler)
+	api.Post("v1/enrollment/:id/cancle", handleercacle)
 
 	log.Fatal(app.Listen(":3000"))
 
