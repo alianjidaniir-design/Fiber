@@ -382,6 +382,18 @@ func GetHandler(c fiber.Ctx) error {
 	})
 }
 
+func ff(c fiber.Ctx) error {
+	err := GetUsers(c)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err})
+	}
+	err = ListCourses(c)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err})
+	}
+	return nil
+}
+
 func main() {
 	app := fiber.New()
 
@@ -401,6 +413,7 @@ func main() {
 	api.Post("/v1/enrollment", ErrorHandler)
 	api.Post("v1/enrollment/:id/cancel", chandler)
 	api.Get("/v1/enrollment", GetHandler)
+	api.Get("/v1/students/:id/courses", ff)
 
 	log.Fatal(app.Listen(":3000"))
 
