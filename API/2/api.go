@@ -57,6 +57,7 @@ func database() *gorm.DB {
 	if err != nil {
 		panic("failed to connect database")
 	}
+	db.AutoMigrate(&Students{}, &Courses{}, &Enrollments{})
 	return db
 }
 
@@ -345,7 +346,7 @@ func paginating(page, pageSize int) func(db *gorm.DB) *gorm.DB {
 		if page < 1 {
 			page = 1
 		}
-		if pageSize < 1 {
+		if pageSize <= 0 {
 			pageSize = 10
 		} else if pageSize > 100 {
 			pageSize = 100
@@ -355,34 +356,36 @@ func paginating(page, pageSize int) func(db *gorm.DB) *gorm.DB {
 	}
 }
 
-func (r *Respositivity) paginating(page, pageSize int) (error, int64, []Enrollments) {
+func Get23(db2 *gorm.DB, page, pageSize int) ([]Enrollments, int64, error) {
 	var enrollments []Enrollments
 	var i int64
-	if err := r.DB.Model(&enrollments).Count(&i).Error; err != nil {
-		return err, 0, nil
+	if err := db2.Model(&enrollments).Count(&i).Error; err != nil {
+		return nil, 0, err
 	}
-	if err := r.DB.Scopes(paginating(page, pageSize)).First(&enrollments).Error; err != nil {
-		return err, 0, nil
+	if err := db2.Scopes(paginating(page, pageSize)).First(&enrollments).Error; err != nil {
+		return nil, 0, err
 	}
-	return nil, i, enrollments
+	return enrollments, i, nil
 
 }
 
-func GetHandler(c fiber.Ctx, repo *Respositivity) error {
+func GetHandler(c fiber.Ctx) error {
 	db2 := database()
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	pageSize, _ := strconv.Atoi(c.Query("pageSize", "10"))
-	users, total, err := repo.paginating(page, pageSize)
+	users, total, err := Get23(db2, page, pageSize)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err})
 	}
-	return c.Status(200).JSON(fiber.Map{
+	return c.JSON(fiber.Map{
 		"data":     users,
 		"total":    total,
 		"page":     page,
 		"pageSize": pageSize,
 	})
 }
+
+func
 
 func main() {
 	app := fiber.New()
@@ -402,7 +405,7 @@ func main() {
 	api.Put("/v1/courses/:id", UpdateCourse2)
 	api.Post("/v1/enrollment", ErrorHandler)
 	api.Post("v1/enrollment/:id/cancel", chandler)
-	api.Get("/v1/enrollment", listEnrollments)
+	api.Get("/v1/enrollment", GetHandler)
 
 	log.Fatal(app.Listen(":3000"))
 
