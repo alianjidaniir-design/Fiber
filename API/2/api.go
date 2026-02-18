@@ -263,16 +263,12 @@ func CreateEnrollment(c fiber.Ctx, tx *gorm.DB) error {
 	return c.Status(200).JSON(enrollment)
 }
 
-func Cansele(c fiber.Ctx, tx *gorm.DB) error {
+func Cancle(c fiber.Ctx, tx *gorm.DB) error {
 	var enrollment Enrollments
 	var course Courses
 
-	if err := c.Bind().JSON(&enrollment); err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
-	}
-
-	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&enrollment, "id = ?", c.Params("id")).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&course, enrollment.CourseId).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error() + "Bye"})
 	}
 	if err := tx.First(&enrollment, "id = ?", c.Params("id")).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -281,11 +277,12 @@ func Cansele(c fiber.Ctx, tx *gorm.DB) error {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"code": 403, "message": "student is not enrolled"})
 		}
 	}
-	m := Enrollments{
-		Status:     StatusCanceled,
-		CanceledAt: time.Now(),
+	enrollment.Status = StatusCanceled
+	enrollment.CanceledAt = time.Now()
+	if course.Capacity < 0 {
+		return c.Status(409).JSON(fiber.Map{"code": 409, "message": "student capacity can not be less than 0"})
 	}
-	if err := tx.Create(&m).Error; err != nil {
+	if err := tx.Save(&enrollment).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	course.EnrolledCount--
@@ -308,10 +305,10 @@ func ErrorHandler(c fiber.Ctx) error {
 	return nil
 }
 
-func handleercacle(c fiber.Ctx) error {
+func handlercacle(c fiber.Ctx) error {
 	db2 := database()
 	err := db2.Transaction(func(tx *gorm.DB) error {
-		return CreateEnrollment(c, db2)
+		return Cancle(c, db2)
 	})
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err})
@@ -336,7 +333,7 @@ func main() {
 	api.Put("/v1/students/:id", UpdateUser2)
 	api.Put("/v1/courses/:id", UpdateCourse2)
 	api.Post("/v1/enrollment", ErrorHandler)
-	api.Post("v1/enrollment/:id/cancle", handleercacle)
+	api.Post("v1/enrollment/:id/cancel", handlercacle)
 
 	log.Fatal(app.Listen(":3000"))
 
