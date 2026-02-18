@@ -383,15 +383,14 @@ func GetHandler(c fiber.Ctx) error {
 }
 
 func ff(c fiber.Ctx) error {
-	err := GetUsers(c)
-	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err})
+	var courses []Courses
+
+	db2 := database()
+
+	if err := db2.Find(&courses, c.Params("id")).Error; err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error1": err.Error()})
 	}
-	err = ListCourses(c)
-	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err})
-	}
-	return nil
+	return c.Status(200).JSON(courses)
 }
 
 func main() {
