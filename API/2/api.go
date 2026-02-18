@@ -280,8 +280,6 @@ func Cancle(c fiber.Ctx, tx *gorm.DB) error {
 			return c.Status(409).JSON(fiber.Map{"code": 409, "message": "enrollment is canceled"})
 		}
 	}
-	enrollment.Status = StatusCanceled
-	enrollment.CanceledAt = time.Now()
 
 	f := c.Params("id")
 	d, err := strconv.Atoi(f)
@@ -301,7 +299,11 @@ func Cancle(c fiber.Ctx, tx *gorm.DB) error {
 	if course.Capacity < 0 {
 		return c.Status(409).JSON(fiber.Map{"code": 409, "message": "student capacity can not be less than 0"})
 	}
-	if err := tx.Create(&enrollment).Error; err != nil {
+
+	enrollment.Status = StatusCanceled
+	enrollment.CanceledAt = time.Now()
+
+	if err := tx.Save(&enrollment).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	course.EnrolledCount--
@@ -335,6 +337,16 @@ func handlercacle(c fiber.Ctx) error {
 	return nil
 }
 
+func listEnrollments(c fiber.Ctx) error {
+	db2 := database()
+	var enrollments []Enrollments
+	if err := db2.Find(&enrollments).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(200).JSON(enrollments)
+}
+
 func main() {
 	app := fiber.New()
 
@@ -353,6 +365,7 @@ func main() {
 	api.Put("/v1/courses/:id", UpdateCourse2)
 	api.Post("/v1/enrollment", ErrorHandler)
 	api.Post("v1/enrollment/:id/cancel", handlercacle)
+	api.Get("/v1/enrollment", listEnrollments)
 
 	log.Fatal(app.Listen(":3000"))
 
