@@ -326,7 +326,7 @@ func ErrorHandler(c fiber.Ctx) error {
 	return nil
 }
 
-func handlercacle(c fiber.Ctx) error {
+func chandler(c fiber.Ctx) error {
 	db2 := database()
 	err := db2.Transaction(func(tx *gorm.DB) error {
 		return Cancle(c, db2)
@@ -337,14 +337,45 @@ func handlercacle(c fiber.Ctx) error {
 	return nil
 }
 
-func listEnrollments(c fiber.Ctx) error {
+func paginating(page, pageSize int) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if page < 1 {
+			page = 1
+		}
+		if pageSize < 1 {
+			pageSize = 10
+		} else if pageSize > 100 {
+			pageSize = 100
+		}
+		offset := (page - 1) * pageSize
+		return db.Offset(offset).Limit(pageSize)
+	}
+}
+
+func listEnrollments(c fiber.Ctx) (int64, error) {
 	db2 := database()
 	var enrollments []Enrollments
-	if err := db2.Find(&enrollments).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+
+	if err := db2.Find(&enrollments, c.Params("id")).Error; err != nil {
+		return 0, c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.Status(200).JSON(enrollments)
+	var i int64
+	page, _ := strconv.Atoi(c.Query("page"))
+	pageSize, _ := strconv.Atoi(c.Query("pageSize"))
+	if err := db2.Model(&Enrollments{}).Count(&i).Error; err != nil {
+		return 0, c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	if err := db2.Scopes(paginating(page, pageSize)).Find(&enrollments).Error; err != nil {
+		return 0, c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(200).JSON(fiber.Map{
+		"data":     enrollments,
+		"page":     page,
+		"pageSize": pageSize,
+		"total":    i,
+	})
 }
 
 func main() {
@@ -364,7 +395,7 @@ func main() {
 	api.Put("/v1/students/:id", UpdateUser2)
 	api.Put("/v1/courses/:id", UpdateCourse2)
 	api.Post("/v1/enrollment", ErrorHandler)
-	api.Post("v1/enrollment/:id/cancel", handlercacle)
+	api.Post("v1/enrollment/:id/cancel", chandler)
 	api.Get("/v1/enrollment", listEnrollments)
 
 	log.Fatal(app.Listen(":3000"))
