@@ -14,6 +14,9 @@ import (
 )
 
 type EnrollmentStatus string
+type Respositivity struct {
+	DB *gorm.DB
+}
 
 const (
 	StatusCanceled EnrollmentStatus = "canceled"
@@ -352,29 +355,32 @@ func paginating(page, pageSize int) func(db *gorm.DB) *gorm.DB {
 	}
 }
 
-func listEnrollments(c fiber.Ctx) (int64, error) {
-	db2 := database()
+func (r *Respositivity) paginating(page, pageSize int) (error, int64, []Enrollments) {
 	var enrollments []Enrollments
-
-	if err := db2.Find(&enrollments, c.Params("id")).Error; err != nil {
-		return 0, c.Status(500).JSON(fiber.Map{"error": err.Error()})
-	}
-
 	var i int64
-	page, _ := strconv.Atoi(c.Query("page"))
-	pageSize, _ := strconv.Atoi(c.Query("pageSize"))
-	if err := db2.Model(&Enrollments{}).Count(&i).Error; err != nil {
-		return 0, c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	if err := r.DB.Model(&enrollments).Count(&i).Error; err != nil {
+		return err, 0, nil
 	}
-	if err := db2.Scopes(paginating(page, pageSize)).Find(&enrollments).Error; err != nil {
-		return 0, c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	if err := r.DB.Scopes(paginating(page, pageSize)).First(&enrollments).Error; err != nil {
+		return err, 0, nil
 	}
+	return nil, i, enrollments
 
+}
+
+func GetHandler(c fiber.Ctx, repo *Respositivity) error {
+	db2 := database()
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	pageSize, _ := strconv.Atoi(c.Query("pageSize", "10"))
+	users, total, err := repo.paginating(page, pageSize)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err})
+	}
 	return c.Status(200).JSON(fiber.Map{
-		"data":     enrollments,
+		"data":     users,
+		"total":    total,
 		"page":     page,
 		"pageSize": pageSize,
-		"total":    i,
 	})
 }
 
