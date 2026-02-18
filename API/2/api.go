@@ -17,6 +17,7 @@ type EnrollmentStatus string
 
 const (
 	StatusCanceled EnrollmentStatus = "canceled"
+	StatusEnrolled EnrollmentStatus = "enrolled"
 )
 
 type Students struct {
@@ -39,7 +40,7 @@ type Courses struct {
 
 type Enrollments struct {
 	gorm.Model
-	Status     EnrollmentStatus `gorm:"size : 10;default:'enrolled';not null"`
+	Status     EnrollmentStatus `gorm:"size : 10;not null"`
 	CanceledAt time.Time
 	EnrolledAt time.Time `gorm:"autoCreateTime:milli"`
 	StudentId  uint      `gorm:"unique;not null"`
@@ -250,6 +251,8 @@ func CreateEnrollment(c fiber.Ctx, tx *gorm.DB) error {
 		return c.Status(409).JSON(fiber.Map{"code": 409, "massage": "capacity is completed"})
 	}
 
+	enrollment.Status = StatusEnrolled
+
 	if err := tx.Create(&enrollment).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -267,22 +270,38 @@ func Cancle(c fiber.Ctx, tx *gorm.DB) error {
 	var enrollment Enrollments
 	var course Courses
 
-	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&course, enrollment.CourseId).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error() + "Bye"})
-	}
 	if err := tx.First(&enrollment, "id = ?", c.Params("id")).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return c.Status(404).JSON(fiber.Map{"code": 404, "message": "student not found in enrollments"})
-		} else if enrollment.Status != "enrolled" {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"code": 403, "message": "student is not enrolled"})
+		}
+	}
+	if err := tx.First(&enrollment, enrollment.Status).Error; err != nil {
+		if enrollment.Status == StatusCanceled {
+			return c.Status(409).JSON(fiber.Map{"code": 409, "message": "enrollment is canceled"})
 		}
 	}
 	enrollment.Status = StatusCanceled
 	enrollment.CanceledAt = time.Now()
+
+	f := c.Params("id")
+	d, err := strconv.Atoi(f)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	cor := Enrollments{
+		ID:        uint(d),
+		StudentId: enrollment.StudentId,
+		CourseId:  enrollment.CourseId,
+	}
+
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&course, cor.CourseId).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error() + "Bye"})
+	}
+
 	if course.Capacity < 0 {
 		return c.Status(409).JSON(fiber.Map{"code": 409, "message": "student capacity can not be less than 0"})
 	}
-	if err := tx.Save(&enrollment).Error; err != nil {
+	if err := tx.Create(&enrollment).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	course.EnrolledCount--
