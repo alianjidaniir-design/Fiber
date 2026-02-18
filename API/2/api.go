@@ -14,9 +14,6 @@ import (
 )
 
 type EnrollmentStatus string
-type Respositivity struct {
-	DB *gorm.DB
-}
 
 const (
 	StatusCanceled EnrollmentStatus = "canceled"
@@ -200,14 +197,14 @@ func DeleteCourse(c fiber.Ctx) error {
 }
 
 func UpdateCourse(c fiber.Ctx) error {
-	couserData := map[string]interface{}{
+	causerData := map[string]interface{}{
 		"is_active": false,
 	}
 	var courses Courses
 
 	db2 := database()
 
-	if err := db2.Model(&courses).Where("id = ?", c.Params("id")).Updates(couserData).Error; err != nil {
+	if err := db2.Model(&courses).Where("id = ?", c.Params("id")).Updates(causerData).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.Status(200).JSON(courses)
@@ -270,7 +267,7 @@ func CreateEnrollment(c fiber.Ctx, tx *gorm.DB) error {
 	return c.Status(200).JSON(enrollment)
 }
 
-func Cancle(c fiber.Ctx, tx *gorm.DB) error {
+func Cancel(c fiber.Ctx, tx *gorm.DB) error {
 	var enrollment Enrollments
 	var course Courses
 
@@ -333,7 +330,7 @@ func ErrorHandler(c fiber.Ctx) error {
 func chandler(c fiber.Ctx) error {
 	db2 := database()
 	err := db2.Transaction(func(tx *gorm.DB) error {
-		return Cancle(c, db2)
+		return Cancel(c, db2)
 	})
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err})
@@ -384,8 +381,6 @@ func GetHandler(c fiber.Ctx) error {
 		"pageSize": pageSize,
 	})
 }
-
-func
 
 func main() {
 	app := fiber.New()
