@@ -384,21 +384,18 @@ func GetHandler(c fiber.Ctx) error {
 	})
 }
 
-func Cours(c fiber.Ctx, db2 *gorm.DB) ([]int, error) {
+func Cours[T any](dd T, c fiber.Ctx, db2 *gorm.DB) ([]T, error) {
 }
-func enr(x string, c fiber.Ctx) (string, error) {
-	var enrollments Enrollments
-	var students []Student
+func enr( c fiber.Ctx) (string, error) {
 	var course Courses
+
 	db2 := database()
 	if err := db2.Find(&course, c.Params("id")).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err})
 	}
 
-	err := Cours(c, db2)
-	if err != nil {
-		return "", c.Status(500).JSON(fiber.Map{"error": err})
-	}
+}
+func std(x strung , c fiber.Ctx, db2 *gorm.DB) error {}
 	if err := db2.Find(&students, "id", enrollments.StudentId).Error; err != nil {
 		return "", c.Status(500).JSON(fiber.Map{"error": err})
 	} else if x != "enrolled" {
