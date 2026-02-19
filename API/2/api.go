@@ -450,6 +450,7 @@ func main() {
 	api.Post("v1/enrollment/:id/cancel", chandler)
 	api.Get("/v1/enrollment", GetHandler)
 	api.Get("/v1/students/:id/courses", StatusHandler)
+	api.Get("/v1/students/:id", StatusHandler)
 
 	log.Fatal(app.Listen(":3000"))
 
