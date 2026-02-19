@@ -245,7 +245,9 @@ func CreateEnrollment(c fiber.Ctx, tx *gorm.DB) error {
 	}
 
 	if err := tx.Clauses(clause.Locking{Strength: "Update"}).First(&course, "id = ?", enrollment.CourseId).Error; err != nil {
-		return c.Status(409).JSON(fiber.Map{"error": err.Error()})
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return c.Status(404).JSON(fiber.Map{"code": 404, "message": "course not found"})
+		}
 	}
 
 	if course.Capacity <= (course).EnrolledCount {
@@ -384,16 +386,15 @@ func GetHandler(c fiber.Ctx) error {
 
 func StatusHandler(c fiber.Ctx) error {
 	var enrollments Enrollments
-	enrollments.Status =
 
 }
 
-func ListStudentOfCourses(c fiber.Ctx) error {
-   db2 := database()
-   var students Students
-   if err:=db2.Find(&students , c.Params("id")).Error;err!=nil{
-	   return c.Status(500).JSON(fiber.Map{"error": err})
-   }
+func ListCoursesOfStudent(c fiber.Ctx) error {
+	db2 := database()
+	var course Courses
+	if err := db2.Find(&course, c.Params("id")).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err})
+	}
 
 }
 
@@ -416,7 +417,6 @@ func main() {
 	api.Post("/v1/enrollment", ErrorHandler)
 	api.Post("v1/enrollment/:id/cancel", chandler)
 	api.Get("/v1/enrollment", GetHandler)
-	api.Get("/v1/students/:id/courses", ff)
 
 	log.Fatal(app.Listen(":3000"))
 
