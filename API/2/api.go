@@ -392,15 +392,23 @@ func Cours[T any](dd T, c fiber.Ctx) ([]T, error) {
 
 }
 
-func std(x string, db2 *gorm.DB) (string, error) {
-	var students Students
+func std(x string, db2 *gorm.DB) (string, []Students, error) {
+	var students []Students
+	var enrollments Enrollments
 	if err := db2.Find(&students, "id = ?", enrollments.StudentId).Error; err != nil {
-		return "", err
+		return "", nil, err
 	} else if x != "enrolled" {
-		return "", err
+		return "", nil, err
 	}
-	return x, nil
+	return x, students, nil
+}
 
+func cor(db2 *gorm.DB) (Courses, error) {
+	var course Courses
+	var c fiber.Ctx
+	if err := db2.Find(&course, c.Params("id")).Error; err != nil {
+		return nil, c.Status(500).JSON(fiber.Map{"error": err})
+	}
 }
 func StatusHandler(c fiber.Ctx) error {
 	db2 := database()
