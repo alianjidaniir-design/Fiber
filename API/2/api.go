@@ -167,7 +167,7 @@ func ListCourses(c fiber.Ctx) error {
 
 	db2 := database()
 
-	if err := db2.Find(&courses, c.Params("id")).Error; err != nil {
+	if err := db2.Find(&courses).Error; err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error1": err.Error()})
 	}
 	return c.Status(200).JSON(courses)
@@ -384,37 +384,49 @@ func GetHandler(c fiber.Ctx) error {
 	})
 }
 
-func Cours[T any](dd T, c fiber.Ctx) ([]T, error) {
-	db2 := database()
-	if err := db2.Find(&course, c.Params("id")).Error; err != nil {
-		return nil, c.Status(500).JSON(fiber.Map{"error": err})
+func Cours(d1 string, d2 string, db *gorm.DB) ([]any, error) {
+	s1, err, s2 := std(d1, db)
+	if err != nil {
+		return nil, err
 	}
+
+	err = cor(d2, db)
+	if err != nil {
+		return nil, err
+	}
+
+	temp := []any{s1, s2}
+	return temp, nil
 
 }
 
-func std(x string, db2 *gorm.DB) (string, []Students, error) {
+func std(x string, db2 *gorm.DB) ([]Students, error, string) {
 	var students []Students
-	var enrollments Enrollments
-	if err := db2.Find(&students, "id = ?", enrollments.StudentId).Error; err != nil {
-		return "", nil, err
+	if err := db2.Find(&students).Error; err != nil {
+		return nil, err, ""
 	} else if x != "enrolled" {
-		return "", nil, err
+		return nil, err, ""
 	}
-	return x, students, nil
+	return students, nil, x
 }
 
-func cor(db2 *gorm.DB) (Courses, error) {
+func cor(d2 string, db2 *gorm.DB) error {
 	var course Courses
 	var c fiber.Ctx
-	if err := db2.Find(&course, c.Params("id")).Error; err != nil {
-		return nil, c.Status(500).JSON(fiber.Map{"error": err})
+	if err := db2.Find(&course, d2).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err})
 	}
+	return nil
 }
 func StatusHandler(c fiber.Ctx) error {
 	db2 := database()
-	var enrollments Enrollments
-	status := enrollments.Status
-	d, _ := strconv.Atoi(c.Query("status"))
+	status := c.Query("status")
+	id := c.Params("id")
+	course, err := Cours(status, id, db2)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err})
+	}
+	return c.Status(200).JSON(course)
 
 }
 
