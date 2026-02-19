@@ -382,15 +382,19 @@ func GetHandler(c fiber.Ctx) error {
 	})
 }
 
-func ff(c fiber.Ctx) error {
-	var courses []Courses
+func StatusHandler(c fiber.Ctx) error {
+	var enrollments Enrollments
+	enrollments.Status =
 
-	db2 := database()
+}
 
-	if err := db2.Find(&courses, c.Params("id")).Error; err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error1": err.Error()})
-	}
-	return c.Status(200).JSON(courses)
+func ListStudentOfCourses(c fiber.Ctx) error {
+   db2 := database()
+   var students Students
+   if err:=db2.Find(&students , c.Params("id")).Error;err!=nil{
+	   return c.Status(500).JSON(fiber.Map{"error": err})
+   }
+
 }
 
 func main() {
