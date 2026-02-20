@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -386,10 +387,10 @@ func GetHandler(c fiber.Ctx) error {
 
 func std(f string, x string, db2 *gorm.DB) ([]Enrollments, error) {
 	var enrollment []Enrollments
-	if err := db2.Select("student_id", "course_id", "status").Where("course_id = ?", f).Find(&enrollment).Error; err != nil {
-		return nil, err
+	if err := db2.Model(&enrollment).Select("student_id", "course_id", "status").Error; err != nil {
+		return nil, errors.New("123456")
 	} else if x != "enrolled" {
-		return nil, err
+		return nil, errors.New("enrollment is not enrolled")
 	}
 	return enrollment, nil
 }
@@ -397,7 +398,7 @@ func std(f string, x string, db2 *gorm.DB) ([]Enrollments, error) {
 func StatusHandler(c fiber.Ctx) error {
 	db2 := database()
 	status := c.Query("status")
-	id := c.Params("id")
+	id := c.Params("course_id")
 	st := c.Params(status)
 	f1, err := std(id, st, db2)
 	if err != nil {
@@ -407,6 +408,14 @@ func StatusHandler(c fiber.Ctx) error {
 		"data": f1,
 	})
 
+}
+func sttd(c fiber.Ctx) error {
+	db2 := database()
+	var enrollment []Enrollments
+	if err := db2.Select("student_id").Where("course_id = ?", 64).Find(&enrollment).Error; err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(enrollment)
 }
 
 func main() {
@@ -428,7 +437,8 @@ func main() {
 	api.Post("/v1/enrollment", ErrorHandler)
 	api.Post("v1/enrollment/:id/cancel", chandler)
 	api.Get("/v1/enrollment", GetHandler)
-	api.Get("/v1/courses/:id/students", StatusHandler)
+	api.Get("/v2/courses/:id/students", StatusHandler)
+	api.Get("/v3/enroolment", sttd)
 
 	log.Fatal(app.Listen(":3000"))
 
