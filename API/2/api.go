@@ -384,34 +384,28 @@ func GetHandler(c fiber.Ctx) error {
 	})
 }
 
-func std(x string, db2 *gorm.DB) (Students, error, string) {
-	var course Courses
-	var enroll Enrollments
-	if err := db2.Find(&course).Where("id = ?", course.ID).Error; err != nil {
-		return nil, err, ""
+func std(f string, x string, db2 *gorm.DB) ([]Enrollments, error) {
+	var enrollment []Enrollments
+	if err := db2.Select("student_id", "course_id", "status").Where("course_id = ?", f).Find(&enrollment).Error; err != nil {
+		return nil, err
+	} else if x != "enrolled" {
+		return nil, err
 	}
-	www := Enrollments{
-		CourseId:  course.ID,
-		StudentId: enroll.StudentId,
-		Status:    enroll.Status,
-	}
-
-	if err := db2.Find(&enroll).Error; err != nil {
-		return nil, err, ""
-	}
-
-	return www, nil, x
-
+	return enrollment, nil
 }
 
 func StatusHandler(c fiber.Ctx) error {
 	db2 := database()
 	status := c.Query("status")
-	id := c.Params(status)
+	id := c.Params("id")
+	st := c.Params(status)
+	f1, err := std(id, st, db2)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err})
 	}
-	return c.Status(200).JSON(cou)
+	return c.Status(200).JSON(fiber.Map{
+		"data": f1,
+	})
 
 }
 
