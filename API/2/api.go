@@ -385,14 +385,19 @@ func GetHandler(c fiber.Ctx) error {
 	})
 }
 
-func std(f string, x string, db2 *gorm.DB) ([]Enrollments, error) {
+type sssss struct {
+	StudentId uint
+}
+
+func std(f string, x string, db2 *gorm.DB) ([]sssss, error) {
 	var enrollment []Enrollments
-	if err := db2.Model(&enrollment).Select("student_id", "course_id", "status").Error; err != nil {
+	var sss []sssss
+	if err := db2.Model(&enrollment).Select("student_id", "status").Find(&sss).Error; err != nil {
 		return nil, errors.New("123456")
 	} else if x != "enrolled" {
 		return nil, errors.New("enrollment is not enrolled")
 	}
-	return enrollment, nil
+	return sss, nil
 }
 
 func StatusHandler(c fiber.Ctx) error {
@@ -405,20 +410,17 @@ func StatusHandler(c fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": err})
 	}
 	return c.Status(200).JSON(fiber.Map{
-		"data": f1,
+		"data":   f1,
+		"status": st,
 	})
 
-}
-
-type sssss struct {
-	StudentId uint
 }
 
 func sttd(c fiber.Ctx) error {
 	db2 := database()
 	var enrollment []Enrollments
 	var ssss []sssss
-	if err := db2.Model(enrollment).Select("student_id").Where("course_id = ?", 64).Find(&ssss).Error; err != nil {
+	if err := db2.Model(enrollment).Select("student_id", "status").Where("course_id = ?", 65).Find(&ssss).Error; err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 	return c.JSON(ssss)
