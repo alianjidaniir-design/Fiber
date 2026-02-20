@@ -409,13 +409,19 @@ func StatusHandler(c fiber.Ctx) error {
 	})
 
 }
+
+type sssss struct {
+	StudentId uint
+}
+
 func sttd(c fiber.Ctx) error {
 	db2 := database()
 	var enrollment []Enrollments
-	if err := db2.Select("student_id").Where("course_id = ?", 64).Find(&enrollment).Error; err != nil {
+	var ssss []sssss
+	if err := db2.Model(enrollment).Select("student_id").Where("course_id = ?", 64).Find(&ssss).Error; err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
-	return c.JSON(enrollment)
+	return c.JSON(ssss)
 }
 
 func main() {
