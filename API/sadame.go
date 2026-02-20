@@ -9,10 +9,12 @@ import (
 	"gorm.io/gorm"
 )
 
-func main() {
+func dfsf(c fiber.Ctx) {
 	app := fiber.New()
+
 }
 
 func main() {
+	app := fiber.New()
 
 }

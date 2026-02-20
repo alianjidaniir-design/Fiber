@@ -384,15 +384,23 @@ func GetHandler(c fiber.Ctx) error {
 	})
 }
 
-func std(x string, db2 *gorm.DB) ([]Students, error, string) {
+func std(x string, db2 *gorm.DB) (Students, error, string) {
 	var course Courses
 	var enroll Enrollments
 	if err := db2.Find(&course).Where("id = ?", course.ID).Error; err != nil {
 		return nil, err, ""
 	}
+	www := Enrollments{
+		CourseId:  course.ID,
+		StudentId: enroll.StudentId,
+		Status:    enroll.Status,
+	}
 
+	if err := db2.Find(&enroll).Error; err != nil {
+		return nil, err, ""
+	}
 
-	return []Enrollments , nil , x
+	return www, nil, x
 
 }
 
