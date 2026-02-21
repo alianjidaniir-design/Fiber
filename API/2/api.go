@@ -386,68 +386,66 @@ func GetHandler(c fiber.Ctx) error {
 
 type sssss struct {
 	StudentId uint
+	Status    string
 }
 
-func std(f string, db2 *gorm.DB) ([]sssss, error) {
+func std(s string, f string, db2 *gorm.DB) ([]sssss, error) {
 	var enrollment []Enrollments
 	var sss []sssss
 	if err := db2.Model(enrollment).Select("student_id").Where("course_id = ? ", f).Find(&sss).Error; err != nil {
 		return nil, err
 	}
-	fmt.Println(sss)
+	if s == "enrolled" {
+		if err := db2.Model(enrollment).Select("student_id", "status").Where("course_id = ? AND status = ? ", f, StatusEnrolled).Find(&sss).Error; err != nil {
+			return nil, err
+		}
+		return sss, nil
+	}
+
 	return sss, nil
 }
 
-func requre(s string) string {
-	if s != "enrolled" {
-		return ""
-	}
-	return s
-}
-
 func StatusHandler(c fiber.Ctx) error {
-	var str string
-
-	c.Params()
-	c.Query()
 
 	db2 := database()
-	f := requre(str)
 	id := c.Params("course_id")
-	st := c.Params(c.Query(str))
-	if st != "enrolled" {
-		return c.JSON(fiber.Map{"saeed": "javad"})
-	}
+	st := c.Query("status")
 
-	f1, err := std(id, db2)
+	f1, err := std(st, id, db2)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err})
 	}
 	return c.JSON(fiber.Map{
-		"data":   f1,
-		"status": st,
+		"data": f1,
 	})
 
 }
 
 type ssssss struct {
 	CourseId uint
+	Status   string
 }
 
-func coursecreator(f string, db *gorm.DB) ([]ssssss, error) {
+func coursecreator(s string, f string, db *gorm.DB) ([]ssssss, error) {
 	var enrollment []Enrollments
 	var ssss []ssssss
 	if ere := db.Model(enrollment).Select("course_id").Where("student_id = ? ", f).Find(&ssss).Error; ere != nil {
 		return nil, ere
 	}
-	fmt.Println(ssss)
+	if s == "enrolled" {
+		if err := db.Model(enrollment).Select("course_id", "status").Where("student_id = ? AND status = ? ", f, StatusEnrolled).Find(&ssss).Error; err != nil {
+			return nil, err
+		}
+		return ssss, nil
+	}
 	return ssss, nil
 }
 
 func handlecs(c fiber.Ctx) error {
 	db2 := database()
 	id := c.Params("student_id")
-	f5, err := coursecreator(id, db2)
+	status := c.Query("status")
+	f5, err := coursecreator(status, id, db2)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err})
 	}
