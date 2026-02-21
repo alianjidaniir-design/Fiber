@@ -196,19 +196,32 @@ func DeleteCourse(c fiber.Ctx) error {
 	return c.Status(200).JSON(courses)
 }
 
-func UpdateCourse(c fiber.Ctx) error {
-	causerData := map[string]interface{}{
-		"is_active": false,
-	}
+func disactiveCourse(c string, f string, db2 *gorm.DB) error {
+
 	var courses Courses
 
-	db2 := database()
+	if err := db2.Model(&courses).Select("id").Where("id = ? ", f).Find(&courses).Error; err != nil {
+		return err
+	}
+	if courses.IsActive == false {
+		return err
+	}
 
-	if err := db2.Model(&courses).Where("id = ?", c.Params("id")).Updates(causerData).Error; err != nil {
+	if err := db2.Model(&courses).Select("is_active").Where("is_active = ?", false).Updates(courses).Error; err != nil {
+		return err
+	}
+	return nil
+
+}
+
+func handledis(c fiber.Ctx) error {
+	db2 := database()
+	tt := c.Params(c.Query("deactivate"))
+	ff := c.Params("id")
+	if err := disactiveCourse(tt, ff, db2); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.Status(200).JSON(courses)
-
+	return c.Status(200).JSON(fiber.Map{"success": true})
 }
 
 func UpdateCourse2(c fiber.Ctx) error {
