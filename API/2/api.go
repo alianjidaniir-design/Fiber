@@ -85,15 +85,16 @@ func listUsers(c fiber.Ctx) error {
 	if err := db2.Find(&students, c.Params("id")).Error; err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	q := c.Params("q")
-	if q != "" {
-		sss := "%" + strings.ToLower(q) + "%"
-		if err := db2.Where("LOWER(id) LIKE ?", sss).Error; err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-		}
-		return c.Status(200).JSON(fiber.Map{"students": sss})
+	q := c.Query("q")
+	if q == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid query"})
 	}
-	return c.Status(200).JSON(students)
+	sss := "%" + strings.ToLower(q) + "%"
+	if err := db2.Model(&Students{}).Select("id").Where("LOWER(id) LIKE ?", sss).Find(&students).Error; err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(200).JSON(fiber.Map{"students": students})
 }
 
 func GetUsers(c fiber.Ctx) error {
