@@ -13,12 +13,10 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-type EnrollmentStatus string
-
-const (
-	StatusCanceled EnrollmentStatus = "canceled"
-	StatusEnrolled EnrollmentStatus = "enrolled"
-)
+type enum struct {
+	StatusCanceled string `gorm:"column:status_canceled , default:canceled"`
+	StatusEnrolled string `gorm:"column:status_enrolled , default:enrolled"`
+}
 
 type Students struct {
 	gorm.Model
@@ -40,7 +38,7 @@ type Courses struct {
 
 type Enrollments struct {
 	gorm.Model
-	Status     EnrollmentStatus `gorm:"size : 10;not null"`
+	Status     enum `gorm:"size : 10;not null"`
 	CanceledAt time.Time
 	EnrolledAt time.Time `gorm:"autoCreateTime:milli"`
 	StudentId  uint      `gorm:"unique;not null"`
@@ -254,7 +252,7 @@ func CreateEnrollment(c fiber.Ctx, tx *gorm.DB) error {
 		return c.Status(409).JSON(fiber.Map{"code": 409, "massage": "capacity is completed"})
 	}
 
-	enrollment.Status = StatusEnrolled
+	enrollment.Status = enum{StatusCanceled}
 
 	if err := tx.Create(&enrollment).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
@@ -279,7 +277,7 @@ func Cancel(c fiber.Ctx, tx *gorm.DB) error {
 		}
 	}
 	if err := tx.First(&enrollment, enrollment.Status).Error; err != nil {
-		if enrollment.Status == StatusCanceled {
+		if enrollment.Status ==  {
 			return c.Status(409).JSON(fiber.Map{"code": 409, "message": "enrollment is canceled"})
 		}
 	}
