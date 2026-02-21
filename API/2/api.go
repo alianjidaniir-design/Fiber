@@ -414,19 +414,24 @@ func StatusHandler(c fiber.Ctx) error {
 
 }
 
-func courseofstudent(f string, db *gorm.DB) ([]sssss, error) {
+type ssssss struct {
+	CourseId uint
+}
+
+func coursecreator(f string, db *gorm.DB) ([]ssssss, error) {
 	var enrollment []Enrollments
-	var ssss []sssss
+	var ssss []ssssss
 	if ere := db.Model(enrollment).Select("course_id").Where("student_id = ? ", f).Find(&ssss).Error; ere != nil {
 		return nil, ere
 	}
+	fmt.Println(ssss)
 	return ssss, nil
 }
 
 func handlecs(c fiber.Ctx) error {
 	db2 := database()
 	id := c.Params("student_id")
-	f5, err := courseofstudent(id, db2)
+	f5, err := coursecreator(id, db2)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err})
 	}
