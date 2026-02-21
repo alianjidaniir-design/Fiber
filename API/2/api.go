@@ -398,12 +398,26 @@ func std(f string, db2 *gorm.DB) ([]sssss, error) {
 	return sss, nil
 }
 
+func requre(s string) string {
+	if s != "enrolled" {
+		return ""
+	}
+	return s
+}
+
 func StatusHandler(c fiber.Ctx) error {
 	var str string
 
+	c.Params()
+	c.Query()
+
 	db2 := database()
+	f := requre(str)
 	id := c.Params("course_id")
 	st := c.Params(c.Query(str))
+	if st != "enrolled" {
+		return c.JSON(fiber.Map{"saeed": "javad"})
+	}
 
 	f1, err := std(id, db2)
 	if err != nil {
