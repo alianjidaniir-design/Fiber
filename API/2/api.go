@@ -409,11 +409,11 @@ func StatusHandler(c fiber.Ctx) error {
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err})
 	}
-	return c.Status(200).JSON(f1)
+	return c.JSON(f1)
 
 }
 
-func sttd(c fiber.Ctx) error {
+func stud(c fiber.Ctx) error {
 	db2 := database()
 	var enrollment []Enrollments
 	var ssss []sssss
@@ -421,7 +421,9 @@ func sttd(c fiber.Ctx) error {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 	fmt.Println(ssss)
+
 	return c.JSON(ssss)
+
 }
 
 func main() {
@@ -444,7 +446,7 @@ func main() {
 	api.Post("v1/enrollment/:id/cancel", chandler)
 	api.Get("/v1/enrollment", GetHandler)
 	api.Get("/v2/courses/:course_id/students", StatusHandler)
-	api.Get("/v3/enroolment/:course_id", sttd)
+	api.Get("/v3/enroolment/:course_id", stud)
 
 	log.Fatal(app.Listen(":3000"))
 
