@@ -392,27 +392,23 @@ type sssss struct {
 func std(f string, x string, db2 *gorm.DB) ([]sssss, error) {
 	var enrollment []Enrollments
 	var sss []sssss
-	if err := db2.Model(&enrollment).Select("student_id", "status").Find(&sss).Error; err != nil {
-		return nil, errors.New("123456")
+	if err := db2.Model(enrollment).Select("student_id", "status").Where("course_id = ? ", f).Find(&sss).Error; err != nil {
+		return nil, db2.Error
 	} else if x != "enrolled" {
-		return nil, errors.New("enrollment is not enrolled")
+		return nil, db2.Error
 	}
 	return sss, nil
 }
 
 func StatusHandler(c fiber.Ctx) error {
 	db2 := database()
-	status := c.Query("status")
 	id := c.Params("course_id")
-	st := c.Params(status)
+	st := c.Params(c.Query("status"))
 	f1, err := std(id, st, db2)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err})
 	}
-	return c.Status(200).JSON(fiber.Map{
-		"data":   f1,
-		"status": st,
-	})
+	return c.Status(200).JSON(f1)
 
 }
 
@@ -420,7 +416,7 @@ func sttd(c fiber.Ctx) error {
 	db2 := database()
 	var enrollment []Enrollments
 	var ssss []sssss
-	if err := db2.Model(enrollment).Select("student_id", "status").Where("course_id = ?", 65).Find(&ssss).Error; err != nil {
+	if err := db2.Model(enrollment).Select("student_id").Where("course_id = ?", c.Params("course_id")).Find(&ssss).Error; err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 	return c.JSON(ssss)
@@ -445,8 +441,8 @@ func main() {
 	api.Post("/v1/enrollment", ErrorHandler)
 	api.Post("v1/enrollment/:id/cancel", chandler)
 	api.Get("/v1/enrollment", GetHandler)
-	api.Get("/v2/courses/:id/students", StatusHandler)
-	api.Get("/v3/enroolment", sttd)
+	api.Get("/v2/courses/:course_id/students", StatusHandler)
+	api.Get("/v3/enroolment/:course_id", sttd)
 
 	log.Fatal(app.Listen(":3000"))
 
