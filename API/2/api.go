@@ -392,11 +392,12 @@ type sssss struct {
 func std(f string, x string, db2 *gorm.DB) ([]sssss, error) {
 	var enrollment []Enrollments
 	var sss []sssss
-	if err := db2.Model(enrollment).Select("student_id", "status").Where("course_id = ? ", f).Find(&sss).Error; err != nil {
-		return nil, db2.Error
+	if err := db2.Model(enrollment).Select("student_id").Where("course_id = ? ", f).Find(&sss).Error; err != nil {
+		return nil, err
 	} else if x != "enrolled" {
-		return nil, db2.Error
+		return nil, err
 	}
+	fmt.Println(sss)
 	return sss, nil
 }
 
@@ -419,6 +420,7 @@ func sttd(c fiber.Ctx) error {
 	if err := db2.Model(enrollment).Select("student_id").Where("course_id = ?", c.Params("course_id")).Find(&ssss).Error; err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
+	fmt.Println(ssss)
 	return c.JSON(ssss)
 }
 
