@@ -394,8 +394,6 @@ func std(f string, x string, db2 *gorm.DB) ([]sssss, error) {
 	var sss []sssss
 	if err := db2.Model(enrollment).Select("student_id").Where("course_id = ? ", f).Find(&sss).Error; err != nil {
 		return nil, err
-	} else if x != "enrolled" {
-		return nil, err
 	}
 	fmt.Println(sss)
 	return sss, nil
