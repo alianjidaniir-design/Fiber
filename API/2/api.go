@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -83,6 +84,14 @@ func listUsers(c fiber.Ctx) error {
 
 	if err := db2.Find(&students, c.Params("id")).Error; err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	q := c.Params("q")
+	if q != "" {
+		sss := "%" + strings.ToLower(q) + "%"
+		if err := db2.Where("LOWER(id) LIKE ?", sss).Error; err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.Status(200).JSON(fiber.Map{"students": sss})
 	}
 	return c.Status(200).JSON(students)
 }
@@ -200,18 +209,11 @@ func disactiveCourse(c string, f string, db2 *gorm.DB) error {
 
 	var courses Courses
 
-	if err := db2.Model(&courses).Select("id").Where("id = ? ", f).Find(&courses).Error; err != nil {
+	if err := db2.Model(&courses).Select("id , is_active").Where(" id = ? AND is_active = ?", f, true).Find(&courses).Error; err != nil {
 		return err
 	}
-	if courses.IsActive == false {
-		return err
-	}
-
-	if err := db2.Model(&courses).Select("is_active").Where("is_active = ?", false).Updates(courses).Error; err != nil {
-		return err
-	}
-	return nil
-
+	courses.IsActive = false
+	return db2.Model(&courses).Select("is_active").Updates(&courses).Error
 }
 
 func handledis(c fiber.Ctx) error {
@@ -479,7 +481,7 @@ func main() {
 	api.Get("/v1/courses", ListCourses)
 	api.Get("/v1/courses/:id", Recourses)
 	api.Delete("/v1/courses/:id", DeleteCourse)
-	api.Patch("/v1/courses/:id", UpdateCourse)
+	api.Patch("/v1/courses/:id/deactivate", handledis)
 	api.Put("/v1/students/:id", UpdateUser2)
 	api.Put("/v1/courses/:id", UpdateCourse2)
 	api.Post("/v1/enrollment", ErrorHandler)
