@@ -1,32 +1,33 @@
 package main
 
 import (
-	"strings"
-
-	"github.com/gofiber/fiber/v3"
+	"fmt"
+	"io"
+	"log"
+	"log/syslog"
+	"os"
 )
 
-func compress(a any) any {
-	switch a.(type) {
-	case int:
-		return a.(int)*a.(int) + 1
-	case float64:
-		return a
-	case string:
-		return strings.ToLower(a.(string))
-	default:
-		return a
+func main() {
+	sys, err := syslog.New(syslog.LOG_SYSLOG, "saherh.go")
+	fmt.Println("Hello")
+	if err != nil {
+		log.Println("Error creating syslog")
+		return
 	}
 
-}
+	flag := os.O_APPEND | os.O_CREATE | os.O_WRONLY
+	fiel, err := os.OpenFile("saherh.log", flag, 0664)
+	if err != nil {
+		log.Println("Error opening file")
+		return
+	}
+	w := io.MultiWriter(fiel, os.Stdout, os.Stderr)
+	logger := log.New(w, "", log.LstdFlags|log.Lshortfile)
+	logger.Println("Hello")
+	logger.Println("BOOK %d", os.Getpid())
 
-func fib(c fiber.Ctx) error {
-	f1 := c.Query("f1")
-	g := compress(f1)
-	return c.JSON(fiber.Map{"data": g})
-}
-func main() {
-	app := fiber.New()
-	app.Get("/compress", fib)
-	app.Listen(":3001")
+	log.Println(sys)
+	log.Println("Everything is good")
+
 }
