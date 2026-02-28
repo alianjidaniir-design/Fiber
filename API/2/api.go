@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -43,9 +44,9 @@ type Enrollments struct {
 	Status     EnrollmentStatus `gorm:"size : 10;not null"`
 	CanceledAt time.Time
 	EnrolledAt time.Time `gorm:"autoCreateTime:milli"`
-	StudentId  uint      `gorm:"unique;not null"`
+	StudentId  uint      `gorm:"not null"`
 	CourseId   uint      `gorm:"not null"`
-	ID         uint      `gorm:"primaryKey;autoIncrement;not null"`
+	ID         uint      `gorm:"primaryKey;autoIncrement"`
 }
 
 func database() *gorm.DB {
@@ -72,6 +73,7 @@ func CreateUser(c fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	c.Status(fiber.Status)
 	return c.Status(201).JSON(students)
 
 }
@@ -89,8 +91,8 @@ func listUsers(c fiber.Ctx) error {
 	if q == "" {
 		return errors.New("query is empty")
 	}
-	search := "%" + q + "%"
-	if err := db2.Model(&Students{}).Where("LOWER(first_name) LIKE = ? ", search).Find(&students).Error; err != nil {
+	search := "%" + strings.ToLower(q) + "%"
+	if err := db2.Model(&Students{}).Where("LOWER(first_name) LIKE ? ", search).Find(&students).Error; err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.Status(200).JSON(students)
@@ -177,6 +179,16 @@ func ListCourses(c fiber.Ctx) error {
 	db2 := database()
 
 	if err := db2.Find(&courses).Error; err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error1": err.Error()})
+	}
+
+	q := c.Query("q")
+	if q == "" {
+		return errors.New("query is empty")
+	}
+
+	search := "%" + strings.ToLower(q) + "%"
+	if err := db2.Model(&Courses{}).Where("LOWER(title) LIKE ? ", search).Find(&courses).Error; err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error1": err.Error()})
 	}
 	return c.Status(200).JSON(courses)
@@ -411,7 +423,7 @@ func std(s string, f string, db2 *gorm.DB) ([]sssss, error) {
 		return nil, err
 	}
 	if s == "enrolled" {
-		if err := db2.Model(enrollment).Select("student_id", "status").Where("course_id = ? AND status = ? ", f, StatusEnrolled).Find(&sss).Error; err != nil {
+		if err := db2.Model(enrollment).Select("student_id", "status").Where("course_id = ? AND status = ? ", f, s).Find(&sss).Error; err != nil {
 			return nil, err
 		}
 		return sss, nil
@@ -448,7 +460,7 @@ func coursecreator(s string, f string, db *gorm.DB) ([]ssssss, error) {
 		return nil, ere
 	}
 	if s == "enrolled" {
-		if err := db.Model(enrollment).Select("course_id", "status").Where("student_id = ? AND status = ? ", f, StatusEnrolled).Find(&ssss).Error; err != nil {
+		if err := db.Model(enrollment).Select("course_id", "status").Where("student_id = ? AND status = ? ", f, s).Find(&ssss).Error; err != nil {
 			return nil, err
 		}
 		return ssss, nil
