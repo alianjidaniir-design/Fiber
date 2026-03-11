@@ -41,7 +41,7 @@ type Courses struct {
 
 type Enrollments struct {
 	gorm.Model
-	Status     EnrollmentStatus `gorm:"size : 10;not null"`
+	Status     EnrollmentStatus `gorm:"size : 10 ;not null"`
 	CanceledAt time.Time
 	EnrolledAt time.Time `gorm:"autoCreateTime:milli"`
 	StudentId  uint      `gorm:"not null"`
@@ -73,7 +73,7 @@ func CreateUser(c fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.Status(fiber.Status)
+	c.Status(fiber.StatusOK)
 	return c.Status(201).JSON(students)
 
 }
