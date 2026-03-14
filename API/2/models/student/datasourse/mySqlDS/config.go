@@ -6,7 +6,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const (
@@ -63,7 +62,7 @@ func normalizeDSN(dsn string) string {
 	}
 
 	if !strings.Contains(dsn, "?") {
-		return dsn + "?parseTime=true&loc=UTC&charset=utf8mb4"
+		return dsn + "?parseTime=true&loc=Asia%2FTehran&time_zone=%27%2B03:30%27&charset=utf8mb4"
 	}
 	base, queryParse, _ := strings.Cut(dsn, "?")
 	queryValues, err := url.ParseQuery(queryParse)
@@ -75,7 +74,10 @@ func normalizeDSN(dsn string) string {
 		queryValues.Set("parseTime", "true")
 	}
 	if queryValues.Get("loc") == "" {
-		queryValues.Set("loc", "UTC")
+		queryValues.Set("loc", "Asia/Tehran")
+	}
+	if queryValues.Get("time_zone") == "" {
+		queryValues.Set("time_zone", "'+03:30'")
 	}
 	if queryValues.Get("charset") == "" {
 		queryValues.Set("charset", "utf8mb4")
