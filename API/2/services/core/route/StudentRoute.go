@@ -1,14 +1,16 @@
 package route
 
 import (
+	. "Fiber/API/2/controllers/Student"
+
 	"github.com/gofiber/fiber/v2"
 )
 
-var StudentRoute = map[string]string{
-	"StudentCreate": "student/create",
+var studentRoute = map[string]string{
+	"studentCreate": "student/create",
 }
 
 func SetupStudentRoute(app *fiber.App) map[string]string {
-	app.Post("StudentCreate", Create)
-	return StudentRoute
+	app.Post(studentRoute["studentCreate"], Create)
+	return studentRoute
 }

@@ -3,6 +3,7 @@ package mySqlDS
 import (
 	"Fiber/API/2/apiSchema/studentsSchema"
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -45,7 +46,7 @@ func NewTaskDBDSFromEnv() (*UserDBDS, bool, error) {
 		return nil, false, err
 	}
 
-	db, err := open(cfg)
+	db, err := Open(cfg)
 	if err != nil {
 		return nil, false, err
 	}
@@ -61,9 +62,9 @@ func NewTaskDBDSFromEnv() (*UserDBDS, bool, error) {
 
 }
 
-func (db *UserDBDS) CreateStudent(ctx context.Context, req studentsSchema.CreateUserRequest) (studentDataModel.Students, error) {
-	insertQuery := fmt.Sprintf("INSERT INTO %s (title , description) VALUES (?, ?)", db.tableSQL)
-	insertResult, err := ds.db.ExecContent(ctx, insertQuery, req.FirstName, req.LastName, req.LastName)
+func (ds *UserDBDS) CreateStudent(ctx context.Context, req studentsSchema.CreateUserRequest) (studentDataModel.Students, error) {
+	insertQuery := fmt.Sprintf("INSERT INTO %s (title , description) VALUES (?, ?)", ds.tableSQL)
+	insertResult, err := ds.db.ExecContext(ctx, insertQuery, req.FirstName, req.LastName, req.LastName)
 	if err != nil {
 		return studentDataModel.Students{}, err
 	}
@@ -83,6 +84,29 @@ func joinCSV(parts []string) string {
 		joined += ", " + parts[i]
 	}
 	return joined
+}
+
+func (ds *UserDBDS) readTaskByID(ctx context.Context, userID int64) (studentDataModel.Students, error) {
+	var students studentDataModel.Students
+	var createdAt time.Time
+	var updatedAt sql.NullTime
+	var deletedAt sql.NullTime
+	readQuery := fmt.Sprintf("SELECT id , student_code , first_name , updated_at , created_at , deleted_at FROM %s WHERE id = ?", ds.tableSQL)
+	if err := ds.db.QueryRowContext(ctx, readQuery, userID).Scan(&students.ID, students.FirstName, students.LastName, &createdAt, &updatedAt, &deletedAt); err != nil {
+		return studentDataModel.Students{}, err
+	}
+
+	students.CreatedAt = createdAt.In(myLocation()).Format("2006-01-02 15:04:05")
+	if updatedAt.Valid {
+		value := updatedAt.Time.In(myLocation()).Format("2006-01-02 15:04:05")
+		students.UpdatedAt = value
+	}
+	if deletedAt.Valid {
+		value := deletedAt.Time.In(myLocation()).Format("2006-01-02 15:04:05")
+		students.DeletedAt = value
+	}
+
+	return students, nil
 }
 
 func (ds *UserDBDS) TableName() string {

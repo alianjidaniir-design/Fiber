@@ -22,7 +22,7 @@ func NewStudentDBDS(startID int64) *StudentDBDS {
 	}
 }
 
-func (db *StudentDBDS) CreateStudent(ctx context.Context, req studentsSchema.CreateUserRequest) (studentDataModel.Studentss, error) {
+func (db *StudentDBDS) CreateStudent(ctx context.Context, req studentsSchema.CreateUserRequest) (studentDataModel.Students, error) {
 	_ = ctx
 
 	student := studentDataModel.Students{

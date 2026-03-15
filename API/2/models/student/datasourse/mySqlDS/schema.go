@@ -42,8 +42,6 @@ CREATE TABLE IF NOT EXISTS %s (
 );`, tableIdentifier)
 
 	_, err = db.Exec(query)
-	_, _ = db.Exec(fmt.Sprintf("ALTER TABLE %s ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL", tableIdentifier))
-	_, _ = db.Exec(fmt.Sprintf("ALTER TABLE %s ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL", tableIdentifier))
 	_, _ = db.Exec(fmt.Sprintf("CREATE INDEX idx_deleted_at ON %s (deleted_at)", tableIdentifier))
 	return err
 

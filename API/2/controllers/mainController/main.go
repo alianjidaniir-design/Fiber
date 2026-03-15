@@ -30,7 +30,7 @@ func FinishAPIspan(ctx *fiber.Ctx) {
 }
 
 func ParseQuery(ctx *fiber.Ctx, req any) (string, int, error) {
-	if err := ctx.QueryParser(req); err != nil {
+	if err := ctx.BodyParser(req); err != nil {
 		return "01", status.StatusBadRequest, err
 	}
 

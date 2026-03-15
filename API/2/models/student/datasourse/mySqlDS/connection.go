@@ -8,7 +8,7 @@ import (
 
 var errEmptyDSN = errors.New("dsn is empty")
 
-func open(cfg Config) (*sql.DB, error) {
+func Open(cfg Config) (*sql.DB, error) {
 	if cfg.DSN == "" {
 		return nil, errEmptyDSN
 	}
