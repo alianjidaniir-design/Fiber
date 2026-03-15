@@ -11,21 +11,21 @@ import (
 
 type StudentDBDS struct {
 	idCounter int64
-	students  []studentDataModel.Studentss
+	students  []studentDataModel.Students
 	lock      sync.RWMutex
 }
 
 func NewStudentDBDS(startID int64) *StudentDBDS {
 	return &StudentDBDS{
 		idCounter: startID,
-		students:  []studentDataModel.Studentss{},
+		students:  []studentDataModel.Students{},
 	}
 }
 
 func (db *StudentDBDS) CreateStudent(ctx context.Context, req studentsSchema.CreateUserRequest) (studentDataModel.Studentss, error) {
 	_ = ctx
 
-	student := studentDataModel.Studentss{
+	student := studentDataModel.Students{
 		ID:        atomic.AddInt64(&db.idCounter, 1),
 		FirstName: req.FirstName,
 		LastName:  req.LastName,

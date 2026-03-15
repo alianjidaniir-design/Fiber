@@ -26,7 +26,7 @@ type Config struct {
 func LoadConfigFromEnv() (cfg Config, err error) {
 	cfg = Config{
 		DSN:                 normalizeDSN(strings.TrimSpace(os.Getenv("MYSQL_DSN"))),
-		TaskTableName:       strings.TrimSpace(os.Getenv("MYSQL_STUDEND_TABLE")),
+		TaskTableName:       strings.TrimSpace(os.Getenv("MYSQL_STUDENDS_TABLE")),
 		MaxOpenConnections:  readEnvInt("MYSQL_MAX_OPEN_CONNECTIONS", defaultMaxOpenConnections),
 		MaxIdleConnections:  readEnvInt("MYSQL_MAX_IDLE_CONNECTIONS", defaultMaxIdleConnections),
 		ConnMaxLifetimeSpan: readEnvInt("MYSQL_CONN_MAX_LIFETIME_SPAN", defaultConnMaxLifetimeSpan),
