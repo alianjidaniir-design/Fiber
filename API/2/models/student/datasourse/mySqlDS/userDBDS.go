@@ -63,8 +63,8 @@ func NewTaskDBDSFromEnv() (*UserDBDS, bool, error) {
 }
 
 func (ds *UserDBDS) CreateStudent(ctx context.Context, req studentsSchema.CreateUserRequest) (studentDataModel.Students, error) {
-	insertQuery := fmt.Sprintf("INSERT INTO %s (title , description) VALUES (?, ?)", ds.tableSQL)
-	insertResult, err := ds.db.ExecContext(ctx, insertQuery, req.FirstName, req.LastName, req.LastName)
+	insertQuery := fmt.Sprintf("INSERT INTO %s (student_code , first_name , last_name) VALUES (?, ? , ?)", ds.tableSQL)
+	insertResult, err := ds.db.ExecContext(ctx, insertQuery, req.StudentCode, req.FirstName, req.LastName)
 	if err != nil {
 		return studentDataModel.Students{}, err
 	}

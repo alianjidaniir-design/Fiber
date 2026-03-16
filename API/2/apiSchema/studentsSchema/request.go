@@ -1,7 +1,7 @@
 package studentsSchema
 
 type CreateUserRequest struct {
-	StudentCode string `json:"studentCode" msgpack:"studentCode" valid:"required , max=128"`
-	FirstName   string `json:"firstName" msgpack:"firstName" valid:"required"`
-	LastName    string `json:"lastName" msgpack:"lastName" valid:"required"`
+	StudentCode string `json:"student_code" msgpack:"student_code" validate:"required,max=128"`
+	FirstName   string `json:"first_name" msgpack:"first_name" validate:"required"`
+	LastName    string `json:"last_name" msgpack:"last_name" validate:"required"`
 }

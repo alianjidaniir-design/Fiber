@@ -8,5 +8,5 @@ import (
 )
 
 type StudentDBDS interface {
-	CreateStudent(ctx context.Context, req studentsSchema.CreateUserRequest) (studentDataModel.Studentss, error)
+	CreateStudent(ctx context.Context, req studentsSchema.CreateUserRequest) (studentDataModel.Students, error)
 }

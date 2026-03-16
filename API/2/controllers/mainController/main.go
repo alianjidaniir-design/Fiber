@@ -56,7 +56,7 @@ func ParseQuery(ctx *fiber.Ctx, req any) (string, int, error) {
 		Validate(validateExtraData commonSchema.ValidateExtraData) (string, int, error)
 	})
 	if !ok {
-		return "", status.StatusOK, nil
+		return "", status.StatusBadRequest, nil
 	}
 
 	return validator.Validate(commonSchema.ValidateExtraData{Headers: headers})

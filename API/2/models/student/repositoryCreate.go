@@ -15,5 +15,5 @@ func (repo *Repository) Create(ctx context.Context, req commonSchema.BaseRequest
 	if err != nil {
 		return studentsSchema.UserLoginResponse{}, "04", status.StatusNotImplemented, err
 	}
-	return studentsSchema.UserLoginResponse{User: createdUser}, "", status.StatusOK, nil
+	return studentsSchema.UserLoginResponse{Students: createdUser}, "", status.StatusOK, nil
 }

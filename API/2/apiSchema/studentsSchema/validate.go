@@ -4,11 +4,13 @@ import (
 	"Fiber/API/2/apiSchema/commonSchema"
 	"Fiber/API/2/statics/constants/status"
 	"Fiber/API/2/statics/customErr"
+	"fmt"
 	"strings"
 )
 
 func (req *CreateUserRequest) Validate(validataExtraData commonSchema.ValidateExtraData) (string, int, error) {
 	req.StudentCode = strings.TrimSpace(req.StudentCode)
+	fmt.Println(req.StudentCode)
 	if req.StudentCode == "" {
 		return "03", status.StatusBadRequest, customErr.InvalidStudentCode
 	}
