@@ -17,7 +17,7 @@ func Create(ctx *fiber.Ctx) error {
 
 	req := commonSchema.BaseRequest[studentsSchema.CreateUserRequest]{}
 
-	errStr, code, err := mainController.ParseQuery(ctx, req)
+	errStr, code, err := mainController.ParseQuery(ctx, &req)
 	if err != nil {
 		return mainController.Error(ctx, controllerBaseErrCode.UserErrCode, "01", errStr, code, err)
 	}

@@ -15,7 +15,7 @@ func main() {
 	}
 
 	dsn := flag.String("dsn", envCfg.DSN, "MySQL DSN")
-	table := flag.String("table", envCfg.TaskTableName, "task table name")
+	table := flag.String("table", envCfg.TaskTableName, "studentss table name")
 	flag.Parse()
 
 	if *dsn == "" {
