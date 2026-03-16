@@ -25,8 +25,21 @@ func InitAPI(ctx *fiber.Ctx, sectionErrCode string) context.Context {
 	return context.Background()
 }
 
-func FinishAPIspan(ctx *fiber.Ctx) {
+func FinishAPISpan(ctx *fiber.Ctx) {
 	_ = ctx
+}
+
+func ParseBody(ctx *fiber.Ctx, req any) (string, int, error) {
+	if err := ctx.BodyParser(req); err != nil {
+		return "01", status.StatusBadRequest, err
+	}
+
+	fillHeaders(ctx, req)
+	if errStr, code, err := validateBody(req); err != nil {
+		return errStr, code, err
+	}
+
+	return "", status.StatusOK, nil
 }
 
 func ParseQuery(ctx *fiber.Ctx, req any) (string, int, error) {
@@ -96,7 +109,6 @@ func validateBody(req any) (string, int, error) {
 		return "", status.StatusOK, nil
 	}
 
-	//dsdssddf
 	headers := map[string]string{}
 	headersField := refValue.Elem().FieldByName("Headers")
 	if headersField.IsValid() {

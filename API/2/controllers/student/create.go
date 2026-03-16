@@ -13,11 +13,11 @@ import (
 func Create(ctx *fiber.Ctx) error {
 	spanCtx := mainController.InitAPI(ctx, "11")
 
-	defer mainController.FinishAPIspan(ctx)
+	defer mainController.FinishAPISpan(ctx)
 
 	req := commonSchema.BaseRequest[studentsSchema.CreateUserRequest]{}
 
-	errStr, code, err := mainController.ParseQuery(ctx, &req)
+	errStr, code, err := mainController.ParseBody(ctx, &req)
 	if err != nil {
 		return mainController.Error(ctx, controllerBaseErrCode.UserErrCode, "01", errStr, code, err)
 	}
